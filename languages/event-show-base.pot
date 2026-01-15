@@ -1,0 +1,608 @@
+# Copyright (C) 2024 Event Show Base
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Event Show Base 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/event-show-base\n"
+"POT-Creation-Date: 2024-01-01 00:00:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2024-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+
+#: event-show.php
+msgid "Event Show"
+msgstr ""
+
+msgid "Event Show - Sistema de gestión de eventos"
+msgstr ""
+
+#: includes/class-event-show-post-types.php
+msgid "Eventos"
+msgstr ""
+
+msgid "Evento"
+msgstr ""
+
+msgid "Todos los eventos"
+msgstr ""
+
+msgid "Añadir nuevo evento"
+msgstr ""
+
+msgid "Editar evento"
+msgstr ""
+
+msgid "Nuevo evento"
+msgstr ""
+
+msgid "Ver evento"
+msgstr ""
+
+msgid "Buscar eventos"
+msgstr ""
+
+msgid "No se encontraron eventos"
+msgstr ""
+
+msgid "No se encontraron eventos en la papelera"
+msgstr ""
+
+#: includes/class-event-show-taxonomies.php
+msgid "Categorías de Evento"
+msgstr ""
+
+msgid "Categoría de Evento"
+msgstr ""
+
+msgid "Todas las categorías"
+msgstr ""
+
+msgid "Editar categoría"
+msgstr ""
+
+msgid "Actualizar categoría"
+msgstr ""
+
+msgid "Añadir nueva categoría"
+msgstr ""
+
+msgid "Nombre de nueva categoría"
+msgstr ""
+
+msgid "Buscar categorías"
+msgstr ""
+
+msgid "Clasificación de Edad"
+msgstr ""
+
+msgid "Todas las clasificaciones"
+msgstr ""
+
+msgid "Organizadores"
+msgstr ""
+
+msgid "Organizador"
+msgstr ""
+
+msgid "Todos los organizadores"
+msgstr ""
+
+msgid "Editar organizador"
+msgstr ""
+
+msgid "Actualizar organizador"
+msgstr ""
+
+msgid "Añadir nuevo organizador"
+msgstr ""
+
+msgid "Nombre del nuevo organizador"
+msgstr ""
+
+msgid "Buscar organizadores"
+msgstr ""
+
+msgid "Lugares"
+msgstr ""
+
+msgid "Lugar"
+msgstr ""
+
+msgid "Todos los lugares"
+msgstr ""
+
+msgid "Editar lugar"
+msgstr ""
+
+msgid "Actualizar lugar"
+msgstr ""
+
+msgid "Añadir nuevo lugar"
+msgstr ""
+
+msgid "Nombre del nuevo lugar"
+msgstr ""
+
+msgid "Buscar lugares"
+msgstr ""
+
+#: includes/class-event-show-metaboxes.php
+msgid "Detalles del Evento"
+msgstr ""
+
+msgid "Fecha de inicio"
+msgstr ""
+
+msgid "Fecha de fin"
+msgstr ""
+
+msgid "Hora de inicio"
+msgstr ""
+
+msgid "Hora de fin"
+msgstr ""
+
+msgid "Imágenes del Evento"
+msgstr ""
+
+msgid "Imagen destacada"
+msgstr ""
+
+msgid "Seleccionar imagen"
+msgstr ""
+
+msgid "Remover imagen"
+msgstr ""
+
+msgid "Galería de imágenes"
+msgstr ""
+
+msgid "Seleccionar imágenes"
+msgstr ""
+
+msgid "Opciones del Evento"
+msgstr ""
+
+msgid "Plantilla de visualización"
+msgstr ""
+
+msgid "Por defecto"
+msgstr ""
+
+msgid "Habilitar registro"
+msgstr ""
+
+msgid "Capacidad máxima"
+msgstr ""
+
+msgid "Fecha límite de registro"
+msgstr ""
+
+msgid "Precio"
+msgstr ""
+
+msgid "Gratuito"
+msgstr ""
+
+#: includes/class-event-show-attendees.php
+msgid "No se encontró el evento"
+msgstr ""
+
+msgid "El evento no permite registro"
+msgstr ""
+
+msgid "El evento ha alcanzado su capacidad máxima"
+msgstr ""
+
+msgid "El plazo de registro ha expirado"
+msgstr ""
+
+msgid "Este email ya está registrado para este evento"
+msgstr ""
+
+msgid "¡Registro exitoso! Te hemos enviado un email de confirmación."
+msgstr ""
+
+msgid "Error al registrar el asistente"
+msgstr ""
+
+#: includes/class-event-show-notifications.php
+msgid "Confirmación de registro"
+msgstr ""
+
+msgid "Hola"
+msgstr ""
+
+msgid "Tu registro ha sido confirmado para el evento:"
+msgstr ""
+
+msgid "Fecha"
+msgstr ""
+
+msgid "Ubicación"
+msgstr ""
+
+msgid "Ver evento"
+msgstr ""
+
+msgid "Añadir al calendario"
+msgstr ""
+
+msgid "Gracias por registrarte"
+msgstr ""
+
+msgid "Nuevo registro de asistente"
+msgstr ""
+
+msgid "Se ha registrado un nuevo asistente para el evento"
+msgstr ""
+
+msgid "Nombre"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Teléfono"
+msgstr ""
+
+msgid "Número de asistentes"
+msgstr ""
+
+msgid "Gestionar asistentes"
+msgstr ""
+
+msgid "Recordatorio de evento"
+msgstr ""
+
+msgid "Te recordamos que el evento está próximo"
+msgstr ""
+
+msgid "Nos vemos allí"
+msgstr ""
+
+msgid "Nuevo evento enviado"
+msgstr ""
+
+msgid "Se ha enviado un nuevo evento para revisión"
+msgstr ""
+
+msgid "Título"
+msgstr ""
+
+msgid "Descripción"
+msgstr ""
+
+msgid "Enviado por"
+msgstr ""
+
+msgid "Revisar evento"
+msgstr ""
+
+#: admin/class-event-show-admin.php
+msgid "Configuración"
+msgstr ""
+
+msgid "Configuración de Event Show"
+msgstr ""
+
+msgid "Logs del Sistema"
+msgstr ""
+
+msgid "Acción"
+msgstr ""
+
+msgid "Usuario"
+msgstr ""
+
+msgid "IP"
+msgstr ""
+
+msgid "No hay registros de log"
+msgstr ""
+
+msgid "Teléfono del organizador"
+msgstr ""
+
+msgid "Email del organizador"
+msgstr ""
+
+msgid "Sitio web del organizador"
+msgstr ""
+
+msgid "Imagen del organizador"
+msgstr ""
+
+msgid "Dirección del lugar"
+msgstr ""
+
+msgid "URL del mapa"
+msgstr ""
+
+msgid "Imagen del lugar"
+msgstr ""
+
+#: admin/class-event-show-admin-columns.php
+msgid "Fecha del evento"
+msgstr ""
+
+msgid "Lugar"
+msgstr ""
+
+msgid "Organizador"
+msgstr ""
+
+msgid "Asistentes"
+msgstr ""
+
+msgid "Estado"
+msgstr ""
+
+msgid "Próximo"
+msgstr ""
+
+msgid "En curso"
+msgstr ""
+
+msgid "Pasado"
+msgstr ""
+
+#: public/class-event-show-shortcodes.php
+msgid "No se encontraron eventos"
+msgstr ""
+
+msgid "Categoría"
+msgstr ""
+
+msgid "Todas"
+msgstr ""
+
+msgid "Ordenar por"
+msgstr ""
+
+msgid "Más reciente"
+msgstr ""
+
+msgid "Fecha ascendente"
+msgstr ""
+
+msgid "Fecha descendente"
+msgstr ""
+
+msgid "Título A-Z"
+msgstr ""
+
+msgid "Título Z-A"
+msgstr ""
+
+msgid "Leer más"
+msgstr ""
+
+msgid "Ver detalles"
+msgstr ""
+
+msgid "Registrarse"
+msgstr ""
+
+msgid "Lleno"
+msgstr ""
+
+msgid "Registro cerrado"
+msgstr ""
+
+msgid "Enviar Evento"
+msgstr ""
+
+msgid "Dashboard de Usuario"
+msgstr ""
+
+#: templates/single-evento.php
+msgid "Inicio"
+msgstr ""
+
+msgid "Fin"
+msgstr ""
+
+msgid "Contacto"
+msgstr ""
+
+msgid "Sitio web"
+msgstr ""
+
+msgid "Descripción del Evento"
+msgstr ""
+
+msgid "Información Adicional"
+msgstr ""
+
+msgid "Compartir"
+msgstr ""
+
+msgid "Descargar .ical"
+msgstr ""
+
+msgid "Google Calendar"
+msgstr ""
+
+#: templates/registration-form.php
+msgid "Registro de Asistentes"
+msgstr ""
+
+msgid "Tu nombre completo"
+msgstr ""
+
+msgid "Tu email"
+msgstr ""
+
+msgid "Tu teléfono"
+msgstr ""
+
+msgid "Número de personas"
+msgstr ""
+
+msgid "Acepto los términos y condiciones"
+msgstr ""
+
+msgid "Enviar registro"
+msgstr ""
+
+msgid "Enviando..."
+msgstr ""
+
+#: templates/submit-event-form.php
+msgid "Título del evento"
+msgstr ""
+
+msgid "Descripción del evento"
+msgstr ""
+
+msgid "Seleccionar categoría"
+msgstr ""
+
+msgid "Seleccionar clasificación"
+msgstr ""
+
+msgid "Seleccionar organizador"
+msgstr ""
+
+msgid "Crear nuevo organizador"
+msgstr ""
+
+msgid "Seleccionar lugar"
+msgstr ""
+
+msgid "Crear nuevo lugar"
+msgstr ""
+
+msgid "Enviar evento"
+msgstr ""
+
+msgid "Tu evento será revisado antes de ser publicado"
+msgstr ""
+
+msgid "Crear Organizador"
+msgstr ""
+
+msgid "Cerrar"
+msgstr ""
+
+msgid "Crear"
+msgstr ""
+
+msgid "Crear Lugar"
+msgstr ""
+
+msgid "Dirección"
+msgstr ""
+
+#: templates/user-dashboard.php
+msgid "Mis Eventos"
+msgstr ""
+
+msgid "Mis Organizadores"
+msgstr ""
+
+msgid "Mis Lugares"
+msgstr ""
+
+msgid "Mi Perfil"
+msgstr ""
+
+msgid "Evento"
+msgstr ""
+
+msgid "Fecha"
+msgstr ""
+
+msgid "Estado"
+msgstr ""
+
+msgid "Acciones"
+msgstr ""
+
+msgid "Editar"
+msgstr ""
+
+msgid "Borrador"
+msgstr ""
+
+msgid "Pendiente"
+msgstr ""
+
+msgid "Publicado"
+msgstr ""
+
+msgid "Añadir nuevo evento"
+msgstr ""
+
+msgid "Añadir organizador"
+msgstr ""
+
+msgid "Añadir lugar"
+msgstr ""
+
+msgid "Nombre de usuario"
+msgstr ""
+
+msgid "Miembro desde"
+msgstr ""
+
+msgid "Eventos publicados"
+msgstr ""
+
+#: templates/layouts/calendar.php
+msgid "enero"
+msgstr ""
+
+msgid "febrero"
+msgstr ""
+
+msgid "marzo"
+msgstr ""
+
+msgid "abril"
+msgstr ""
+
+msgid "mayo"
+msgstr ""
+
+msgid "junio"
+msgstr ""
+
+msgid "julio"
+msgstr ""
+
+msgid "agosto"
+msgstr ""
+
+msgid "septiembre"
+msgstr ""
+
+msgid "octubre"
+msgstr ""
+
+msgid "noviembre"
+msgstr ""
+
+msgid "diciembre"
+msgstr ""
+
+#: templates/layouts/carousel.php
+msgid "Días"
+msgstr ""
+
+msgid "Horas"
+msgstr ""
+
+msgid "Minutos"
+msgstr ""
+
+msgid "Anterior"
+msgstr ""
+
+msgid "Siguiente"
+msgstr ""
