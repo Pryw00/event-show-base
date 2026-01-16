@@ -105,29 +105,60 @@ $current_user = wp_get_current_user();
             </select>
         </div>
 
-        <div class="form-group">
-            <label for="event_organizer">
-                <?php esc_html_e('Organizador', 'event-show-base'); ?> *
-            </label>
-            <select id="event_organizer" name="organizer" class="form-control" required>
-                <option value=""><?php esc_html_e('Seleccionar organizador', 'event-show-base'); ?></option>
-                <?php
-                $organizers = get_terms(array(
+        <?php
+        if (current_user_can('manage_options')) :
+            // Admin: puede elegir cualquier organizador
+        ?>
+            <div class="form-group">
+                <label for="event_organizer"><?php esc_html_e('Organizador', 'event-show-base'); ?> *</label>
+                <select id="event_organizer" name="organizer" class="form-control" required>
+                    <option value=""><?php esc_html_e('Seleccionar organizador', 'event-show-base'); ?></option>
+                    <?php
+                    $organizers = get_terms(array(
+                        'taxonomy' => 'organizador',
+                        'hide_empty' => false,
+                    ));
+                    foreach ($organizers as $org) :
+                    ?>
+                        <option value="<?php echo esc_attr($org->term_id); ?>"><?php echo esc_html($org->name); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="description">
+                    <?php esc_html_e('¿No encuentras tu organizador?', 'event-show-base'); ?>
+                    <a href="#" class="create-organizer-link"><?php esc_html_e('Crear nuevo', 'event-show-base'); ?></a>
+                </p>
+            </div>
+            <?php else :
+            // Usuario normal: usar organizador_ids
+            $user_organizadores = get_user_meta(get_current_user_id(), 'organizador_ids', true);
+            if (!is_array($user_organizadores)) $user_organizadores = array();
+            if (count($user_organizadores) > 1) :
+                $terms = get_terms(array(
                     'taxonomy' => 'organizador',
                     'hide_empty' => false,
+                    'include' => $user_organizadores,
                 ));
-                foreach ($organizers as $org) :
-                ?>
-                    <option value="<?php echo esc_attr($org->term_id); ?>"><?php echo esc_html($org->name); ?></option>
-                <?php
-                endforeach;
-                ?>
-            </select>
-            <p class="description">
-                <?php esc_html_e('¿No encuentras tu organizador?', 'event-show-base'); ?>
-                <a href="#" class="create-organizer-link"><?php esc_html_e('Crear nuevo', 'event-show-base'); ?></a>
-            </p>
-        </div>
+            ?>
+                <div class="form-group">
+                    <label for="event_organizer"><?php esc_html_e('Organizador', 'event-show-base'); ?> *</label>
+                    <select id="event_organizer" name="organizer" class="form-control" required>
+                        <option value=""><?php esc_html_e('Seleccionar organizador', 'event-show-base'); ?></option>
+                        <?php foreach ($terms as $org) : ?>
+                            <option value="<?php echo esc_attr($org->term_id); ?>"><?php echo esc_html($org->name); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="description"><?php esc_html_e('Solo puedes elegir entre tus fichas de organizador asignadas.', 'event-show-base'); ?></p>
+                </div>
+            <?php elseif (count($user_organizadores) === 1) : ?>
+                <input type="hidden" name="organizer" value="<?php echo esc_attr($user_organizadores[0]); ?>">
+            <?php else : ?>
+                <div class="form-group">
+                    <div class="alert alert-warning">
+                        <?php esc_html_e('No tienes ninguna ficha de organizador asignada. Contacta al administrador.', 'event-show-base'); ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
 
         <div class="form-group">
             <label for="event_location">
@@ -186,29 +217,6 @@ $current_user = wp_get_current_user();
             <div class="form-group">
                 <label><?php esc_html_e('Sitio Web', 'event-show-base'); ?></label>
                 <input type="url" name="website" class="form-control">
-            </div>
-            <button type="submit" class="button"><?php esc_html_e('Crear', 'event-show-base'); ?></button>
-        </form>
-    </div>
-</div>
-
-<!-- Modal para crear lugar -->
-<div id="create-location-modal" class="event-modal" style="display: none;">
-    <div class="modal-content">
-        <span class="modal-close">&times;</span>
-        <h3><?php esc_html_e('Crear Nuevo Lugar', 'event-show-base'); ?></h3>
-        <form id="create-location-form">
-            <div class="form-group">
-                <label><?php esc_html_e('Nombre', 'event-show-base'); ?> *</label>
-                <input type="text" name="name" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label><?php esc_html_e('Dirección', 'event-show-base'); ?></label>
-                <input type="text" name="address" class="form-control">
-            </div>
-            <div class="form-group">
-                <label><?php esc_html_e('URL de Google Maps', 'event-show-base'); ?></label>
-                <input type="url" name="map_url" class="form-control">
             </div>
             <button type="submit" class="button"><?php esc_html_e('Crear', 'event-show-base'); ?></button>
         </form>

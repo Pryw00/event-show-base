@@ -1,3 +1,79 @@
+/* ===========================
+   Modal flotante y overlay
+   =========================== */
+.event-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(44, 62, 80, 0.55);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s;
+}
+/* Modal window scrollable y responsivo */
+.event-modal-window {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(44, 62, 80, 0.18);
+  padding: 32px 28px 24px 28px;
+  max-width: 420px;
+  width: 100%;
+  position: relative;
+  animation: modalIn 0.25s cubic-bezier(0.4, 2, 0.6, 1) both;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 600px) {
+  .event-modal-window {
+    max-width: 98vw;
+    padding: 18px 6vw 18px 6vw;
+    font-size: 15px;
+  }
+}
+@keyframes modalIn {
+  0% {
+    transform: translateY(40px) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+.event-modal-window h3 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-size: 1.3em;
+  color: var(--event-primary-color);
+}
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-size: 28px;
+  color: var(--event-dark-gray);
+  cursor: pointer;
+  z-index: 2;
+  transition: color 0.2s;
+}
+.modal-close:hover {
+  color: var(--event-danger-color);
+}
+.event-modal-window .form-group {
+  margin-bottom: 18px;
+}
+.event-modal-window .form-control {
+  font-size: 15px;
+  padding: 10px 12px;
+}
+.event-modal-window button.button {
+  margin-top: 10px;
+}
 /**
  * Estilos públicos del plugin Event Show
  *
@@ -348,30 +424,45 @@
   text-decoration: none;
 }
 
-.slide-countdown {
+/* Countdown estilo moderno para carrusel */
+.clock-container {
+  position: relative;
   display: flex;
-  gap: 20px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  height: 8rem;
+  background-color: transparent;
+  border-radius: 3px;
+  box-shadow: none;
+  gap: 3rem;
   margin: 20px 0;
 }
-
-.countdown-item {
+.clock-column {
+  margin-right: 0;
   text-align: center;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 15px 20px;
-  border-radius: 5px;
-  backdrop-filter: blur(10px);
+  position: relative;
 }
-
-.countdown-value {
-  display: block;
-  font-size: 32px;
-  font-weight: bold;
-}
-
-.countdown-label {
-  display: block;
-  font-size: 12px;
+.clock-label {
+  padding-top: 10px;
   text-transform: uppercase;
+  color: #131313;
+  font-size: 14px;
+  text-align: center;
+  border-top: 1px solid rgba(19, 19, 19, 0.2);
+}
+.clock-timer {
+  color: #131313;
+  font-size: 36px;
+  line-height: 1;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  min-width: 40px;
+  transition: color 0.2s, transform 0.2s;
+}
+.clock-timer.clock-updating {
+  color: #1fc69d;
+  transform: scale(1.2);
 }
 
 .carousel-control {

@@ -195,21 +195,6 @@ $google_calendar_url = '#'; // Se generará con JavaScript si es necesario
             ?>
         </div>
 
-        <!-- Resumen final -->
-        <div class="event-summary-footer">
-            <h3><?php esc_html_e('Resumen del Evento', 'event-show-base'); ?></h3>
-            <ul>
-                <?php if ($lugar) : ?>
-                    <li><strong><?php esc_html_e('Ciudad/Lugar:', 'event-show-base'); ?></strong> <?php echo esc_html($lugar->name); ?></li>
-                <?php endif; ?>
-                <?php if ($lugar_address) : ?>
-                    <li><strong><?php esc_html_e('Recinto:', 'event-show-base'); ?></strong> <?php echo esc_html($lugar_address); ?></li>
-                <?php endif; ?>
-                <li><strong><?php esc_html_e('Fecha:', 'event-show-base'); ?></strong> <?php echo esc_html(Event_Show_Helpers::format_date($event_date)); ?></li>
-                <li><strong><?php esc_html_e('Hora:', 'event-show-base'); ?></strong> <?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?></li>
-            </ul>
-        </div>
-
     </div>
 </article>
 

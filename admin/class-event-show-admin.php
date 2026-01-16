@@ -40,8 +40,57 @@ class Event_Show_Admin
         // AJAX para gestión de asistentes
         add_action('wp_ajax_event_show_export_attendees', array($this, 'ajax_export_attendees'));
         add_action('wp_ajax_event_show_delete_attendee', array($this, 'ajax_delete_attendee'));
+        // Campos de organizador en perfil de usuario
+        add_action('show_user_profile', array($this, 'user_organizador_fields'));
+        add_action('edit_user_profile', array($this, 'user_organizador_fields'));
+        add_action('personal_options_update', array($this, 'save_user_organizador_fields'));
+        add_action('edit_user_profile_update', array($this, 'save_user_organizador_fields'));
     }
 
+    /**
+     * Mostrar campo de organizadores en el perfil de usuario
+     */
+    public function user_organizador_fields($user)
+    {
+        if (!current_user_can('edit_users')) return;
+        $user_organizadores = get_user_meta($user->ID, 'organizador_ids', true);
+        if (!is_array($user_organizadores)) $user_organizadores = array();
+        $terms = get_terms(array(
+            'taxonomy' => 'organizador',
+            'hide_empty' => false,
+            'number' => 100
+        ));
+?>
+        <h2><?php esc_html_e('Organizadores asignados', 'event-show-base'); ?></h2>
+        <table class="form-table">
+            <tr>
+                <th><label for="organizador_ids[]"><?php esc_html_e('Fichas de organizador', 'event-show-base'); ?></label></th>
+                <td>
+                    <select name="organizador_ids[]" id="organizador_ids" multiple style="min-width:250px;">
+                        <?php foreach ($terms as $term) : ?>
+                            <option value="<?php echo esc_attr($term->term_id); ?>" <?php selected(in_array($term->term_id, $user_organizadores)); ?>><?php echo esc_html($term->name); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="description"><?php esc_html_e('Puedes asignar una o varias fichas de organizador a este usuario.', 'event-show-base'); ?></p>
+                </td>
+            </tr>
+        </table>
+    <?php
+    }
+
+    /**
+     * Guardar organizadores asignados al usuario
+     */
+    public function save_user_organizador_fields($user_id)
+    {
+        if (!current_user_can('edit_users')) return;
+        if (isset($_POST['organizador_ids'])) {
+            $ids = array_map('intval', (array)$_POST['organizador_ids']);
+            update_user_meta($user_id, 'organizador_ids', $ids);
+        } else {
+            delete_user_meta($user_id, 'organizador_ids');
+        }
+    }
     /**
      * Añadir menú de administración
      */
@@ -86,7 +135,7 @@ class Event_Show_Admin
      */
     public function render_settings_page()
     {
-?>
+    ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             <form method="post" action="options.php">

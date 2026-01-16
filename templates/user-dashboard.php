@@ -45,11 +45,10 @@ $user_events = new WP_Query(array(
 
         <!-- Mis Eventos -->
         <div class="dashboard-tab-content active" id="tab-my-events">
-            <div class="dashboard-section-header">
+            <div class="dashboard-section-header" style="display:flex;justify-content:space-between;align-items:center;">
                 <h3><?php esc_html_e('Mis Eventos', 'event-show-base'); ?></h3>
-                <a href="#" class="button dashboard-new-event"><?php esc_html_e('Crear Nuevo Evento', 'event-show-base'); ?></a>
+                <button class="button" id="open-create-event-modal" type="button"><?php esc_html_e('Crear Nuevo Evento', 'event-show-base'); ?></button>
             </div>
-
             <?php if ($user_events->have_posts()) : ?>
                 <table class="dashboard-table">
                     <thead>
@@ -96,11 +95,6 @@ $user_events = new WP_Query(array(
                                     <?php echo esc_html($total_attendees); ?>
                                 </td>
                                 <td class="dashboard-actions">
-                                    <?php if (current_user_can('edit_post', $event_id)) : ?>
-                                        <a href="<?php echo esc_url(get_edit_post_link($event_id)); ?>" class="dashboard-action-link">
-                                            <?php esc_html_e('Editar', 'event-show-base'); ?>
-                                        </a>
-                                    <?php endif; ?>
                                     <a href="<?php the_permalink(); ?>" target="_blank" class="dashboard-action-link">
                                         <?php esc_html_e('Ver', 'event-show-base'); ?>
                                     </a>
@@ -120,58 +114,95 @@ $user_events = new WP_Query(array(
             <?php else : ?>
                 <div class="dashboard-empty">
                     <p><?php esc_html_e('No has creado ningún evento todavía', 'event-show-base'); ?></p>
-                    <a href="#" class="button dashboard-new-event"><?php esc_html_e('Crear Mi Primer Evento', 'event-show-base'); ?></a>
                 </div>
             <?php endif; ?>
+        </div>
+
+        <!-- Modal crear nuevo evento -->
+        <div id="create-event-modal" class="event-modal-overlay" style="display:none;">
+            <div class="event-modal-window">
+                <span class="modal-close">&times;</span>
+                <?php include EVENT_SHOW_PLUGIN_DIR . 'templates/submit-event-form.php'; ?>
+            </div>
         </div>
 
         <!-- Organizadores -->
         <div class="dashboard-tab-content" id="tab-organizers">
             <div class="dashboard-section-header">
-                <h3><?php esc_html_e('Mis Organizadores', 'event-show-base'); ?></h3>
-                <button class="button create-organizer-link"><?php esc_html_e('Crear Nuevo Organizador', 'event-show-base'); ?></button>
+                <h3><?php esc_html_e('Mis Fichas de Organizador', 'event-show-base'); ?></h3>
             </div>
-
             <?php
-            $organizers = get_terms(array(
-                'taxonomy' => 'organizador',
-                'hide_empty' => false,
-            ));
-
-            if (! empty($organizers)) :
+            $user_organizadores = get_user_meta($user_id, 'organizador_ids', true);
+            if (!is_array($user_organizadores)) $user_organizadores = array();
+            if (count($user_organizadores) > 0) {
+                $terms = get_terms(array(
+                    'taxonomy' => 'organizador',
+                    'hide_empty' => false,
+                    'include' => $user_organizadores,
+                ));
+                foreach ($terms as $org) {
+                    $phone = get_term_meta($org->term_id, 'phone', true);
+                    $email = get_term_meta($org->term_id, 'email', true);
+                    $website = get_term_meta($org->term_id, 'website', true);
+                    $image = get_term_meta($org->term_id, 'image', true);
             ?>
-                <div class="dashboard-grid">
-                    <?php foreach ($organizers as $org) :
-                        $phone = get_term_meta($org->term_id, 'phone', true);
-                        $email = get_term_meta($org->term_id, 'email', true);
-                        $website = get_term_meta($org->term_id, 'website', true);
-                        $image = get_term_meta($org->term_id, 'image', true);
-                    ?>
-                        <div class="dashboard-card">
-                            <?php if ($image) : ?>
-                                <div class="card-image">
-                                    <?php echo wp_get_attachment_image($image, 'thumbnail'); ?>
-                                </div>
-                            <?php endif; ?>
-                            <h4><?php echo esc_html($org->name); ?></h4>
-                            <?php if ($email) : ?>
-                                <p><span class="dashicons dashicons-email"></span> <?php echo esc_html($email); ?></p>
-                            <?php endif; ?>
-                            <?php if ($phone) : ?>
-                                <p><span class="dashicons dashicons-phone"></span> <?php echo esc_html($phone); ?></p>
-                            <?php endif; ?>
-                            <?php if ($website) : ?>
-                                <p><span class="dashicons dashicons-admin-links"></span> <a href="<?php echo esc_url($website); ?>" target="_blank"><?php esc_html_e('Web', 'event-show-base'); ?></a></p>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php else : ?>
+                    <div class="dashboard-card">
+                        <?php if ($image) : ?>
+                            <div class="card-image">
+                                <?php echo wp_get_attachment_image($image, 'thumbnail'); ?>
+                            </div>
+                        <?php endif; ?>
+                        <h4><?php echo esc_html($org->name); ?></h4>
+                        <?php if ($email) : ?>
+                            <p><span class="dashicons dashicons-email"></span> <?php echo esc_html($email); ?></p>
+                        <?php endif; ?>
+                        <?php if ($phone) : ?>
+                            <p><span class="dashicons dashicons-phone"></span> <?php echo esc_html($phone); ?></p>
+                        <?php endif; ?>
+                        <?php if ($website) : ?>
+                            <p><span class="dashicons dashicons-admin-links"></span> <a href="<?php echo esc_url($website); ?>" target="_blank"><?php esc_html_e('Web', 'event-show-base'); ?></a></p>
+                        <?php endif; ?>
+                        <a href="#" class="button edit-organizer-link" data-org-id="<?php echo esc_attr($org->term_id); ?>" data-org-name="<?php echo esc_attr($org->name); ?>" data-org-email="<?php echo esc_attr($email); ?>" data-org-phone="<?php echo esc_attr($phone); ?>" data-org-website="<?php echo esc_attr($website); ?>" data-org-image="<?php echo esc_attr($image); ?>"><?php esc_html_e('Editar Ficha', 'event-show-base'); ?></a>
+                    </div>
+                <?php }
+            } else { ?>
                 <div class="dashboard-empty">
-                    <p><?php esc_html_e('No hay organizadores creados', 'event-show-base'); ?></p>
-                    <button class="button create-organizer-link"><?php esc_html_e('Crear Organizador', 'event-show-base'); ?></button>
+                    <p><?php esc_html_e('No tienes ficha de organizador asociada. Contacta al administrador.', 'event-show-base'); ?></p>
                 </div>
-            <?php endif; ?>
+            <?php } ?>
+
+            <!-- Modal editar organizador -->
+            <div id="edit-organizer-modal" class="event-modal-overlay" style="display:none;">
+                <div class="event-modal-window">
+                    <span class="modal-close">&times;</span>
+                    <h3><?php esc_html_e('Editar Ficha de Organizador', 'event-show-base'); ?></h3>
+                    <form id="edit-organizer-form">
+                        <input type="hidden" name="term_id" id="edit_org_id" value="">
+                        <div class="form-group">
+                            <label><?php esc_html_e('Nombre', 'event-show-base'); ?> *</label>
+                            <input type="text" name="name" id="edit_org_name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label><?php esc_html_e('Email', 'event-show-base'); ?></label>
+                            <input type="email" name="email" id="edit_org_email" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label><?php esc_html_e('Teléfono', 'event-show-base'); ?></label>
+                            <input type="text" name="phone" id="edit_org_phone" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label><?php esc_html_e('Sitio Web', 'event-show-base'); ?></label>
+                            <input type="url" name="website" id="edit_org_website" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label><?php esc_html_e('Logo / Imagen', 'event-show-base'); ?></label>
+                            <input type="file" name="image_file" id="edit_org_image_file" accept="image/*" class="form-control">
+                            <img id="edit_org_image_preview" src="" alt="" style="max-width:60px; max-height:60px; display:none; border-radius:8px; background:#f4f4f4; margin-top:10px;">
+                        </div>
+                        <button type="submit" class="button"><?php esc_html_e('Guardar Cambios', 'event-show-base'); ?></button>
+                    </form>
+                </div>
+            </div>
         </div>
 
         <!-- Lugares -->
@@ -193,8 +224,14 @@ $user_events = new WP_Query(array(
                     <?php foreach ($locations as $loc) :
                         $address = get_term_meta($loc->term_id, 'address', true);
                         $map_url = get_term_meta($loc->term_id, 'map_url', true);
+                        $image = get_term_meta($loc->term_id, 'image', true);
                     ?>
                         <div class="dashboard-card">
+                            <?php if ($image) : ?>
+                                <div class="card-image">
+                                    <?php echo wp_get_attachment_image($image, 'thumbnail'); ?>
+                                </div>
+                            <?php endif; ?>
                             <h4><?php echo esc_html($loc->name); ?></h4>
                             <?php if ($address) : ?>
                                 <p><span class="dashicons dashicons-location"></span> <?php echo esc_html($address); ?></p>
@@ -211,6 +248,34 @@ $user_events = new WP_Query(array(
                     <button class="button create-location-link"><?php esc_html_e('Crear Lugar', 'event-show-base'); ?></button>
                 </div>
             <?php endif; ?>
+
+            <!-- Modal crear lugar -->
+            <div id="create-location-modal" class="event-modal-overlay" style="display:none;">
+                <div class="event-modal-window">
+                    <span class="modal-close">&times;</span>
+                    <h3><?php esc_html_e('Crear Nuevo Lugar', 'event-show-base'); ?></h3>
+                    <form id="create-location-form">
+                        <div class="form-group">
+                            <label><?php esc_html_e('Nombre', 'event-show-base'); ?> *</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label><?php esc_html_e('Dirección', 'event-show-base'); ?></label>
+                            <input type="text" name="address" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label><?php esc_html_e('URL de Google Maps', 'event-show-base'); ?></label>
+                            <input type="url" name="map_url" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label><?php esc_html_e('Imagen / Foto', 'event-show-base'); ?></label>
+                            <input type="file" name="image_file" id="create_loc_image_file" accept="image/*" class="form-control">
+                            <img id="create_loc_image_preview" src="" alt="" style="max-width:60px; max-height:60px; display:none; border-radius:8px; background:#f4f4f4; margin-top:10px;">
+                        </div>
+                        <button type="submit" class="button"><?php esc_html_e('Crear Lugar', 'event-show-base'); ?></button>
+                    </form>
+                </div>
+            </div>
         </div>
 
         <!-- Mi Perfil -->
@@ -235,6 +300,3 @@ $user_events = new WP_Query(array(
         </div>
     </div>
 </div>
-
-<!-- Modales incluidos (reutilizados del formulario de envío) -->
-<?php include EVENT_SHOW_PLUGIN_DIR . 'templates/submit-event-form.php'; ?>

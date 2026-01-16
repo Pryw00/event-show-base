@@ -61,18 +61,22 @@ $show_countdown = isset($atts['show_countdown']) && 'yes' === $atts['show_countd
                             <?php endif; ?>
 
                             <?php if ($countdown) : ?>
-                                <div class="slide-countdown" data-countdown="<?php echo esc_attr($countdown['total_seconds']); ?>">
-                                    <div class="countdown-item">
-                                        <span class="countdown-value"><?php echo esc_html($countdown['days']); ?></span>
-                                        <span class="countdown-label"><?php esc_html_e('días', 'event-show-base'); ?></span>
+                                <div class="clock-container slide-countdown" data-countdown="<?php echo esc_attr($countdown['total_seconds']); ?>">
+                                    <div class="clock-column">
+                                        <p class="clock-day clock-timer"><?php echo esc_html($countdown['days']); ?></p>
+                                        <p class="clock-label"><?php esc_html_e('DÍAS', 'event-show-base'); ?></p>
                                     </div>
-                                    <div class="countdown-item">
-                                        <span class="countdown-value"><?php echo esc_html($countdown['hours']); ?></span>
-                                        <span class="countdown-label"><?php esc_html_e('hrs', 'event-show-base'); ?></span>
+                                    <div class="clock-column">
+                                        <p class="clock-hours clock-timer"><?php echo esc_html($countdown['hours']); ?></p>
+                                        <p class="clock-label"><?php esc_html_e('HRS', 'event-show-base'); ?></p>
                                     </div>
-                                    <div class="countdown-item">
-                                        <span class="countdown-value"><?php echo esc_html($countdown['minutes']); ?></span>
-                                        <span class="countdown-label"><?php esc_html_e('min', 'event-show-base'); ?></span>
+                                    <div class="clock-column">
+                                        <p class="clock-minutes clock-timer"><?php echo esc_html($countdown['minutes']); ?></p>
+                                        <p class="clock-label"><?php esc_html_e('MIN', 'event-show-base'); ?></p>
+                                    </div>
+                                    <div class="clock-column">
+                                        <p class="clock-seconds clock-timer"><?php echo esc_html($countdown['seconds']); ?></p>
+                                        <p class="clock-label"><?php esc_html_e('SEG', 'event-show-base'); ?></p>
                                     </div>
                                 </div>
                             <?php endif; ?>

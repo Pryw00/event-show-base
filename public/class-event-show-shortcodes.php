@@ -78,6 +78,8 @@ class Event_Show_Shortcodes
             'layout' => 'calendar',
             'category' => '',
             'age_rating' => '',
+            'limit' => -1,
+            'show_past' => 'no',
         ));
 
         return $this->render_events($atts);
@@ -96,6 +98,7 @@ class Event_Show_Shortcodes
             'age_rating' => '',
             'limit' => 6,
             'show_countdown' => 'yes',
+            'show_past' => 'no',
         ));
 
         return $this->render_events($atts);

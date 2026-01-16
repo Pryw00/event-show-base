@@ -24,6 +24,17 @@ class Event_Show_Public
     {
         add_filter('the_content', array($this, 'filter_content'));
         add_action('wp_head', array($this, 'add_structured_data'));
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_media_uploader'));
+    }
+
+    /**
+     * Enqueue WP media uploader for frontend modals
+     */
+    public function enqueue_media_uploader()
+    {
+        if (is_user_logged_in()) {
+            wp_enqueue_media();
+        }
     }
 
     /**

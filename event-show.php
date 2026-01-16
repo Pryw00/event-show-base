@@ -21,7 +21,7 @@ if (! defined('ABSPATH')) {
 }
 
 // Constantes del plugin
-define('EVENT_SHOW_VERSION', '1.0.0');
+define('EVENT_SHOW_VERSION', '1.0.1');
 define('EVENT_SHOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('EVENT_SHOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('EVENT_SHOW_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -210,12 +210,15 @@ class Event_Show
      */
     public function enqueue_public_assets()
     {
+        // Forzar versión única en desarrollo para evitar caché
+        $version = defined('WP_DEBUG') && WP_DEBUG ? time() : EVENT_SHOW_VERSION;
+
         // CSS
         wp_enqueue_style(
             'event-show-public',
             EVENT_SHOW_PLUGIN_URL . 'assets/css/public.css',
             array(),
-            EVENT_SHOW_VERSION
+            $version
         );
 
         // JS
@@ -223,7 +226,7 @@ class Event_Show
             'event-show-public',
             EVENT_SHOW_PLUGIN_URL . 'assets/js/public.js',
             array('jquery'),
-            EVENT_SHOW_VERSION,
+            $version,
             true
         );
 
@@ -241,6 +244,7 @@ class Event_Show
                 ),
             )
         );
+        return; // Evita doble encolado
     }
 
     /**

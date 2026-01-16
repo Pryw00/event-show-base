@@ -1,5 +1,8 @@
 <?php
 
+// ...existing code...
+
+
 /**
  * Manejador de peticiones AJAX
  *
@@ -14,8 +17,81 @@ if (! defined('ABSPATH')) {
 /**
  * Clase para gestionar AJAX
  */
+
 class Event_Show_Ajax
 {
+
+    /**
+     * AJAX: Editar organizador
+     */
+    public function edit_organizer()
+    {
+        check_ajax_referer('event_show_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array(
+                'message' => __('Debes iniciar sesión', 'event-show-base'),
+            ));
+        }
+
+        $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+        $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+        $website = isset($_POST['website']) ? esc_url_raw($_POST['website']) : '';
+        $image_id = '';
+        // Procesar archivo subido si existe
+        if (!empty($_FILES['image_file']['name'])) {
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            $file = $_FILES['image_file'];
+            $upload = wp_handle_upload($file, array('test_form' => false));
+            if (!isset($upload['error']) && isset($upload['file'])) {
+                $filetype = wp_check_filetype($upload['file'], null);
+                $attachment = array(
+                    'post_mime_type' => $filetype['type'],
+                    'post_title' => sanitize_file_name($file['name']),
+                    'post_content' => '',
+                    'post_status' => 'inherit'
+                );
+                $image_id = wp_insert_attachment($attachment, $upload['file']);
+                require_once(ABSPATH . 'wp-admin/includes/image.php');
+                $attach_data = wp_generate_attachment_metadata($image_id, $upload['file']);
+                wp_update_attachment_metadata($image_id, $attach_data);
+            }
+        } else {
+            $image_id = isset($_POST['image']) ? intval($_POST['image']) : '';
+        }
+
+        if (!$term_id || !$name) {
+            wp_send_json_error(array(
+                'message' => __('Faltan datos obligatorios', 'event-show-base'),
+            ));
+        }
+
+        // Solo permitir editar si el usuario tiene asignado este organizador
+        $user_organizadores = get_user_meta(get_current_user_id(), 'organizador_ids', true);
+        if (!is_array($user_organizadores) || !in_array($term_id, $user_organizadores)) {
+            wp_send_json_error(array(
+                'message' => __('No tienes permisos para editar este organizador', 'event-show-base'),
+            ));
+        }
+
+        // Actualizar nombre
+        wp_update_term($term_id, 'organizador', array('name' => $name));
+        // Actualizar meta
+        update_term_meta($term_id, 'email', $email);
+        update_term_meta($term_id, 'phone', $phone);
+        update_term_meta($term_id, 'website', $website);
+        update_term_meta($term_id, 'image', $image_id);
+
+        wp_send_json_success(array(
+            'message' => __('Organizador actualizado correctamente', 'event-show-base'),
+            'term_id' => $term_id,
+            'term_name' => $name,
+        ));
+    }
 
     /**
      * Constructor
@@ -32,6 +108,7 @@ class Event_Show_Ajax
         // Gestión de lugares y organizadores por usuarios
         add_action('wp_ajax_event_show_create_organizer', array($this, 'create_organizer'));
         add_action('wp_ajax_event_show_create_location', array($this, 'create_location'));
+        add_action('wp_ajax_event_show_edit_organizer', array($this, 'edit_organizer'));
 
         // Descargar iCal
         add_action('wp_ajax_event_show_download_ical', array($this, 'download_ical'));
@@ -166,8 +243,22 @@ class Event_Show_Ajax
         if ($age_rating) {
             wp_set_post_terms($event_id, array($age_rating), 'clasificacion_edad');
         }
-        if ($organizer) {
-            wp_set_post_terms($event_id, array($organizer), 'organizador');
+        // Asignar organizador según permisos y user meta (soporte múltiple)
+        if (current_user_can('manage_options')) {
+            if ($organizer) {
+                wp_set_post_terms($event_id, array($organizer), 'organizador');
+            }
+        } else {
+            $user_organizadores = get_user_meta(get_current_user_id(), 'organizador_ids', true);
+            if (is_array($user_organizadores) && count($user_organizadores) > 0) {
+                // Si el usuario envía un organizador válido y lo tiene asignado, usarlo
+                if ($organizer && in_array($organizer, $user_organizadores)) {
+                    wp_set_post_terms($event_id, array($organizer), 'organizador');
+                } else {
+                    // Si solo tiene uno, asignar ese
+                    wp_set_post_terms($event_id, array($user_organizadores[0]), 'organizador');
+                }
+            }
         }
         if ($location) {
             wp_set_post_terms($event_id, array($location), 'lugar');
@@ -257,6 +348,28 @@ class Event_Show_Ajax
         $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
         $address = isset($_POST['address']) ? sanitize_text_field($_POST['address']) : '';
         $map_url = isset($_POST['map_url']) ? esc_url_raw($_POST['map_url']) : '';
+        $image_id = '';
+        // Procesar archivo subido si existe
+        if (!empty($_FILES['image_file']['name'])) {
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            $file = $_FILES['image_file'];
+            $upload = wp_handle_upload($file, array('test_form' => false));
+            if (!isset($upload['error']) && isset($upload['file'])) {
+                $filetype = wp_check_filetype($upload['file'], null);
+                $attachment = array(
+                    'post_mime_type' => $filetype['type'],
+                    'post_title' => sanitize_file_name($file['name']),
+                    'post_content' => '',
+                    'post_status' => 'inherit'
+                );
+                $image_id = wp_insert_attachment($attachment, $upload['file']);
+                require_once(ABSPATH . 'wp-admin/includes/image.php');
+                $attach_data = wp_generate_attachment_metadata($image_id, $upload['file']);
+                wp_update_attachment_metadata($image_id, $attach_data);
+            }
+        }
 
         if (! $name) {
             wp_send_json_error(array(
@@ -280,6 +393,9 @@ class Event_Show_Ajax
         }
         if ($map_url) {
             update_term_meta($term_id, 'map_url', $map_url);
+        }
+        if ($image_id) {
+            update_term_meta($term_id, 'image', $image_id);
         }
 
         wp_send_json_success(array(
