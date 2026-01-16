@@ -41,11 +41,15 @@
     if (input.files && input.files[0]) {
       var reader = new FileReader();
       reader.onload = function (e) {
-        $("#edit_banner_preview").html('<img src="' + e.target.result + '" style="max-width:100%; height:auto; border-radius:8px;">');
+        $("#edit_banner_preview").html(
+          '<img src="' +
+            e.target.result +
+            '" style="max-width:100%; height:auto; border-radius:8px;">'
+        );
       };
       reader.readAsDataURL(input.files[0]);
     } else {
-      $("#edit_banner_preview").html('');
+      $("#edit_banner_preview").html("");
     }
   });
 
@@ -55,11 +59,15 @@
     if (input.files && input.files[0]) {
       var reader = new FileReader();
       reader.onload = function (e) {
-        $("#edit_grid_image_preview").html('<img src="' + e.target.result + '" style="max-width:100%; height:auto; border-radius:8px;">');
+        $("#edit_grid_image_preview").html(
+          '<img src="' +
+            e.target.result +
+            '" style="max-width:100%; height:auto; border-radius:8px;">'
+        );
       };
       reader.readAsDataURL(input.files[0]);
     } else {
-      $("#edit_grid_image_preview").html('');
+      $("#edit_grid_image_preview").html("");
     }
   });
 
@@ -117,20 +125,28 @@
             $("#edit_event_age").val(response.data.age_classification || "");
             $("#edit_event_location").val(response.data.location || "");
             $("#edit_event_capacity").val(response.data.max_attendees || "");
-            
+
             // Mostrar previsualizaciones de imágenes existentes
             if (response.data.banner_url) {
-              $("#edit_banner_preview").html('<img src="' + response.data.banner_url + '" style="max-width:100%; height:auto; border-radius:8px;">');
+              $("#edit_banner_preview").html(
+                '<img src="' +
+                  response.data.banner_url +
+                  '" style="max-width:100%; height:auto; border-radius:8px;">'
+              );
             } else {
-              $("#edit_banner_preview").html('');
+              $("#edit_banner_preview").html("");
             }
-            
+
             if (response.data.grid_image_url) {
-              $("#edit_grid_image_preview").html('<img src="' + response.data.grid_image_url + '" style="max-width:100%; height:auto; border-radius:8px;">');
+              $("#edit_grid_image_preview").html(
+                '<img src="' +
+                  response.data.grid_image_url +
+                  '" style="max-width:100%; height:auto; border-radius:8px;">'
+              );
             } else {
-              $("#edit_grid_image_preview").html('');
+              $("#edit_grid_image_preview").html("");
             }
-            
+
             $("#edit-event-modal").fadeIn();
           } else {
             alert(response.data.message || "Error al cargar evento");
@@ -573,8 +589,8 @@
       $btn.prop("disabled", true).text("Guardando...");
 
       var formData = new FormData(this);
-      formData.append('action', 'event_show_edit_event');
-      formData.append('nonce', eventShowData.nonce);
+      formData.append("action", "event_show_edit_event");
+      formData.append("nonce", eventShowData.nonce);
 
       $.ajax({
         url: eventShowData.ajaxUrl,

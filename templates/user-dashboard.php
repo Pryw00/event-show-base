@@ -149,12 +149,12 @@ $user_events = new WP_Query(array(
                 <form id="edit-event-form" enctype="multipart/form-data">
                     <input type="hidden" id="edit_event_id" name="event_id">
                     <div class="form-messages"></div>
-                    
+
                     <div class="form-group">
                         <label><?php esc_html_e('Descripción', 'event-show-base'); ?> *</label>
                         <textarea id="edit_event_description" name="description" class="form-control" rows="6" required></textarea>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group form-col-half">
                             <label><?php esc_html_e('Fecha de Inicio', 'event-show-base'); ?> *</label>
@@ -165,7 +165,7 @@ $user_events = new WP_Query(array(
                             <input type="time" id="edit_event_time" name="event_time" class="form-control" required>
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group form-col-half">
                             <label><?php esc_html_e('Fecha de Fin', 'event-show-base'); ?></label>
@@ -176,7 +176,7 @@ $user_events = new WP_Query(array(
                             <input type="time" id="edit_event_end_time" name="event_end_time" class="form-control">
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label><?php esc_html_e('Categoría', 'event-show-base'); ?></label>
                         <select id="edit_event_category" name="category" class="form-control">
@@ -189,7 +189,7 @@ $user_events = new WP_Query(array(
                             ?>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label><?php esc_html_e('Clasificación de Edad', 'event-show-base'); ?></label>
                         <select id="edit_event_age" name="age_classification" class="form-control">
@@ -202,7 +202,7 @@ $user_events = new WP_Query(array(
                             ?>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label><?php esc_html_e('Lugar', 'event-show-base'); ?></label>
                         <select id="edit_event_location" name="location" class="form-control">
@@ -215,25 +215,25 @@ $user_events = new WP_Query(array(
                             ?>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label><?php esc_html_e('Aforo Máximo', 'event-show-base'); ?></label>
                         <input type="number" id="edit_event_capacity" name="max_attendees" class="form-control" min="0" step="1">
                         <small class="form-text"><?php esc_html_e('Dejar en blanco para ilimitado', 'event-show-base'); ?></small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label><?php esc_html_e('Banner del Evento', 'event-show-base'); ?></label>
                         <input type="file" id="edit_event_banner" name="banner" class="form-control" accept="image/*">
                         <div id="edit_banner_preview" style="margin-top: 10px;"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label><?php esc_html_e('Imagen para Grid', 'event-show-base'); ?></label>
                         <input type="file" id="edit_event_grid_image" name="grid_image" class="form-control" accept="image/*">
                         <div id="edit_grid_image_preview" style="margin-top: 10px;"></div>
                     </div>
-                    
+
                     <button type="submit" class="button"><?php esc_html_e('Guardar Cambios', 'event-show-base'); ?></button>
                 </form>
             </div>
@@ -255,31 +255,31 @@ $user_events = new WP_Query(array(
                 ));
             ?>
                 <div class="dashboard-grid">
-                <?php foreach ($terms as $org) {
-                    $phone = get_term_meta($org->term_id, 'phone', true);
-                    $email = get_term_meta($org->term_id, 'email', true);
-                    $website = get_term_meta($org->term_id, 'website', true);
-                    $image = get_term_meta($org->term_id, 'image', true);
-            ?>
-                    <div class="dashboard-card">
-                        <?php if ($image) : ?>
-                            <div class="card-image">
-                                <?php echo wp_get_attachment_image($image, 'thumbnail'); ?>
-                            </div>
-                        <?php endif; ?>
-                        <h4><?php echo esc_html($org->name); ?></h4>
-                        <?php if ($email) : ?>
-                            <p><span class="dashicons dashicons-email"></span> <?php echo esc_html($email); ?></p>
-                        <?php endif; ?>
-                        <?php if ($phone) : ?>
-                            <p><span class="dashicons dashicons-phone"></span> <?php echo esc_html($phone); ?></p>
-                        <?php endif; ?>
-                        <?php if ($website) : ?>
-                            <p><span class="dashicons dashicons-admin-links"></span> <a href="<?php echo esc_url($website); ?>" target="_blank"><?php esc_html_e('Web', 'event-show-base'); ?></a></p>
-                        <?php endif; ?>
-                        <a href="#" class="button edit-organizer-link" data-org-id="<?php echo esc_attr($org->term_id); ?>" data-org-name="<?php echo esc_attr($org->name); ?>" data-org-email="<?php echo esc_attr($email); ?>" data-org-phone="<?php echo esc_attr($phone); ?>" data-org-website="<?php echo esc_attr($website); ?>" data-org-image="<?php echo esc_attr($image); ?>"><?php esc_html_e('Editar Ficha', 'event-show-base'); ?></a>
-                    </div>
-                <?php } ?>
+                    <?php foreach ($terms as $org) {
+                        $phone = get_term_meta($org->term_id, 'phone', true);
+                        $email = get_term_meta($org->term_id, 'email', true);
+                        $website = get_term_meta($org->term_id, 'website', true);
+                        $image = get_term_meta($org->term_id, 'image', true);
+                    ?>
+                        <div class="dashboard-card">
+                            <?php if ($image) : ?>
+                                <div class="card-image">
+                                    <?php echo wp_get_attachment_image($image, 'thumbnail'); ?>
+                                </div>
+                            <?php endif; ?>
+                            <h4><?php echo esc_html($org->name); ?></h4>
+                            <?php if ($email) : ?>
+                                <p><span class="dashicons dashicons-email"></span> <?php echo esc_html($email); ?></p>
+                            <?php endif; ?>
+                            <?php if ($phone) : ?>
+                                <p><span class="dashicons dashicons-phone"></span> <?php echo esc_html($phone); ?></p>
+                            <?php endif; ?>
+                            <?php if ($website) : ?>
+                                <p><span class="dashicons dashicons-admin-links"></span> <a href="<?php echo esc_url($website); ?>" target="_blank"><?php esc_html_e('Web', 'event-show-base'); ?></a></p>
+                            <?php endif; ?>
+                            <a href="#" class="button edit-organizer-link" data-org-id="<?php echo esc_attr($org->term_id); ?>" data-org-name="<?php echo esc_attr($org->name); ?>" data-org-email="<?php echo esc_attr($email); ?>" data-org-phone="<?php echo esc_attr($phone); ?>" data-org-website="<?php echo esc_attr($website); ?>" data-org-image="<?php echo esc_attr($image); ?>"><?php esc_html_e('Editar Ficha', 'event-show-base'); ?></a>
+                        </div>
+                    <?php } ?>
                 </div>
             <?php } else { ?>
                 <div class="dashboard-empty">

@@ -532,7 +532,8 @@ class Event_Show_Ajax
     /**
      * Helper: Obtener primer ID de término de una taxonomía
      */
-    private function get_first_term_id($post_id, $taxonomy) {
+    private function get_first_term_id($post_id, $taxonomy)
+    {
         $terms = wp_get_post_terms($post_id, $taxonomy);
         return (!empty($terms) && !is_wp_error($terms)) ? $terms[0]->term_id : '';
     }
@@ -540,7 +541,8 @@ class Event_Show_Ajax
     /**
      * Helper: Obtener URL de imagen grid
      */
-    private function get_grid_image_url($post_id) {
+    private function get_grid_image_url($post_id)
+    {
         $thumbnail_id = get_post_meta($post_id, '_event_thumbnail', true);
         return $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : '';
     }
@@ -618,7 +620,7 @@ class Event_Show_Ajax
             require_once(ABSPATH . 'wp-admin/includes/image.php');
             require_once(ABSPATH . 'wp-admin/includes/file.php');
             require_once(ABSPATH . 'wp-admin/includes/media.php');
-            
+
             $attachment_id = media_handle_upload('banner', $event_id);
             if (!is_wp_error($attachment_id)) {
                 set_post_thumbnail($event_id, $attachment_id);
@@ -630,7 +632,7 @@ class Event_Show_Ajax
             require_once(ABSPATH . 'wp-admin/includes/image.php');
             require_once(ABSPATH . 'wp-admin/includes/file.php');
             require_once(ABSPATH . 'wp-admin/includes/media.php');
-            
+
             $attachment_id = media_handle_upload('grid_image', $event_id);
             if (!is_wp_error($attachment_id)) {
                 update_post_meta($event_id, '_event_thumbnail', $attachment_id);
