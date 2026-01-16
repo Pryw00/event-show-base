@@ -48,6 +48,9 @@
     // Carrusel
     initCarousel();
 
+    // Slider
+    initSlider();
+
     // Dashboard tabs
     initDashboardTabs();
 
@@ -615,6 +618,166 @@
       setInterval(updateTimer, 1000);
     });
   }
+
+  /**
+   * Inicializar slider de eventos
+   */
+  function initSlider() {
+    $(".event-show-slider").each(function () {
+      var $slider = $(this);
+      var $images = $slider.find(".slider-image-item");
+      var $infos = $slider.find(".slider-info-item");
+      var $indicators = $slider.find(".slider-indicator");
+      var currentIndex = 0;
+      var totalSlides = $images.length;
+      var autoplay = $slider.data("autoplay") === 1;
+      var autoplaySpeed = $slider.data("autoplay-speed") || 5000;
+      var autoplayInterval;
+
+      if (totalSlides <= 1) {
+        $slider.find(".slider-controls, .slider-indicators").hide();
+        return;
+      }
+
+      // Actualizar posiciones de las imágenes
+      function updateSlider() {
+        $images.each(function (index) {
+          var $img = $(this);
+          var diff = index - currentIndex;
+
+          // Limpiar clases
+          $img.removeClass("active next far-next prev far-prev");
+
+          // Calcular posición relativa considerando loop
+          if (diff === 0) {
+            $img.addClass("active");
+          } else if (diff === 1 || diff === -(totalSlides - 1)) {
+            $img.addClass("next");
+          } else if (diff === 2 || diff === -(totalSlides - 2)) {
+            $img.addClass("far-next");
+          } else if (diff === -1 || diff === totalSlides - 1) {
+            $img.addClass("prev");
+          } else if (diff === -2 || diff === totalSlides - 2) {
+            $img.addClass("far-prev");
+          }
+        });
+
+        // Actualizar panel de información
+        $infos.removeClass("active").eq(currentIndex).addClass("active");
+      }
+
+      // Siguiente slide
+      function nextSlide() {
+        currentIndex = (currentIndex + 1) % totalSlides;
+        updateSlider();
+      }
+
+      // Anterior slide
+      function prevSlide() {
+        currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+        updateSlider();
+      }
+
+      // Ir a slide específico
+      function goToSlide(index) {
+        currentIndex = index;
+        updateSlider();
+      }
+
+      // Controles
+      $slider.find(".slider-next").on("click", function () {
+        nextSlide();
+        resetAutoplay();
+      });
+
+      $slider.find(".slider-prev").on("click", function () {
+        prevSlide();
+        resetAutoplay();
+      });
+
+      // Click en imagen para ir a ese slide
+      $images.on("click", function (e) {
+        var $img = $(this);
+        if (!$img.hasClass("active")) {
+          e.preventDefault();
+          var index = $img.data("slide-index");
+          goToSlide(index);
+          resetAutoplay();
+        }
+      });
+
+      // Autoplay
+      function startAutoplay() {
+        if (autoplay) {
+          autoplayInterval = setInterval(nextSlide, autoplaySpeed);
+        }
+      }
+
+      function stopAutoplay() {
+        if (autoplayInterval) {
+          clearInterval(autoplayInterval);
+        }
+      }
+
+      function resetAutoplay() {
+        stopAutoplay();
+        startAutoplay();
+      }
+
+      // Pausar en hover
+      $slider.on("mouseenter", function () {
+        stopAutoplay();
+      });
+
+      $slider.on("mouseleave", function () {
+        startAutoplay();
+      });
+
+      // Soporte para teclado
+      $slider.attr("tabindex", "0");
+      $slider.on("keydown", function (e) {
+        if (e.key === "ArrowRight") {
+          nextSlide();
+          resetAutoplay();
+        } else if (e.key === "ArrowLeft") {
+          prevSlide();
+          resetAutoplay();
+        }
+      });
+
+      // Soporte para swipe en móviles
+      var touchStartX = 0;
+      var touchEndX = 0;
+
+      $slider.on("touchstart", function (e) {
+        touchStartX = e.originalEvent.touches[0].clientX;
+      });
+
+      $slider.on("touchend", function (e) {
+        touchEndX = e.originalEvent.changedTouches[0].clientX;
+        handleSwipe();
+      });
+
+      function handleSwipe() {
+        var swipeThreshold = 50;
+        var diff = touchStartX - touchEndX;
+
+        if (Math.abs(diff) > swipeThreshold) {
+          if (diff > 0) {
+            nextSlide();
+          } else {
+            prevSlide();
+          }
+          resetAutoplay();
+        }
+      }
+
+      // Iniciar
+      updateSlider();
+      startAutoplay();
+    });
+  }
+
   /**
    * Exportar asistentes
    */

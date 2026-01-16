@@ -19,9 +19,8 @@ $organizadores = wp_get_post_terms($event_id, 'organizador');
 <div class="event-card">
     <?php if ($thumbnail_url) : ?>
         <div class="event-card-image">
-            <a href="<?php the_permalink(); ?>">
-                <img src="<?php echo esc_url($thumbnail_url); ?>" alt="<?php the_title_attribute(); ?>">
-            </a>
+            <img src="<?php echo esc_url($thumbnail_url); ?>" alt="<?php the_title_attribute(); ?>">
+            <div class="event-card-overlay"></div>
         </div>
     <?php endif; ?>
 
@@ -41,12 +40,6 @@ $organizadores = wp_get_post_terms($event_id, 'organizador');
             <p class="event-card-organizer">
                 <?php echo esc_html($organizadores[0]->name); ?>
             </p>
-        <?php endif; ?>
-
-        <?php if (has_excerpt()) : ?>
-            <div class="event-card-excerpt">
-                <?php the_excerpt(); ?>
-            </div>
         <?php endif; ?>
 
         <?php if (! empty($lugares)) : ?>

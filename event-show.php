@@ -213,11 +213,19 @@ class Event_Show
         // Forzar versión única en desarrollo para evitar caché
         $version = defined('WP_DEBUG') && WP_DEBUG ? time() : EVENT_SHOW_VERSION;
 
+        // Cargar tipografía Poppins desde Google Fonts
+        wp_enqueue_style(
+            'event-show-fonts',
+            'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap',
+            array(),
+            null
+        );
+
         // CSS
         wp_enqueue_style(
             'event-show-public',
             EVENT_SHOW_PLUGIN_URL . 'assets/css/public.css',
-            array(),
+            array('event-show-fonts'),
             $version
         );
 

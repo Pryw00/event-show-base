@@ -31,6 +31,7 @@ Event Show es un plugin completo para WordPress que permite crear, gestionar y p
 - **Lista**: Vista de lista detallada
 - **Calendario**: Agrupación por meses
 - **Carrusel**: Con countdown y navegación automática
+- **Slider**: Panel informativo con slider de imágenes con efecto 3D
 - Página de evento individual completa
 - Archivo de eventos
 
@@ -136,6 +137,21 @@ Parámetros:
 
 - `limit`: Número de eventos en el carrusel
 - `autoplay`: Activar rotación automática (true/false)
+
+#### Slider
+
+```
+[event_show_slider limit="5" autoplay="true" autoplay_speed="5000"]
+```
+
+Muestra eventos con un diseño moderno: panel de información a la izquierda y slider de imágenes/posters a la derecha con efecto de profundidad.
+
+Parámetros:
+
+- `limit`: Número de eventos en el slider
+- `category`: ID de categoría para filtrar
+- `autoplay`: Activar rotación automática (true/false)
+- `autoplay_speed`: Velocidad de rotación en milisegundos (default: 5000)
 
 #### Formulario de registro
 
@@ -256,7 +272,8 @@ event-show-base/
 │   │   ├── grid.php
 │   │   ├── list.php
 │   │   ├── calendar.php
-│   │   └── carousel.php
+│   │   ├── carousel.php
+│   │   └── slider.php
 │   ├── partials/
 │   │   └── event-card.php
 │   ├── registration-form.php

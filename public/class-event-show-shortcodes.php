@@ -26,6 +26,7 @@ class Event_Show_Shortcodes
         add_shortcode('event_show_grid', array($this, 'event_grid_shortcode'));
         add_shortcode('event_show_calendar', array($this, 'event_calendar_shortcode'));
         add_shortcode('event_show_carousel', array($this, 'event_carousel_shortcode'));
+        add_shortcode('event_show_slider', array($this, 'event_slider_shortcode'));
         add_shortcode('event_show_registration', array($this, 'registration_form_shortcode'));
         add_shortcode('event_show_submit_form', array($this, 'submit_form_shortcode'));
         add_shortcode('event_show_dashboard', array($this, 'user_dashboard_shortcode'));
@@ -105,6 +106,26 @@ class Event_Show_Shortcodes
     }
 
     /**
+     * Shortcode para slider de eventos
+     *
+     * [event_show_slider limit="5" autoplay="true" autoplay_speed="5000"]
+     */
+    public function event_slider_shortcode($atts)
+    {
+        $atts = Event_Show_Helpers::sanitize_shortcode_atts($atts, array(
+            'layout' => 'slider',
+            'category' => '',
+            'age_rating' => '',
+            'limit' => 5,
+            'autoplay' => 'true',
+            'autoplay_speed' => 5000,
+            'show_past' => 'no',
+        ));
+
+        return $this->render_events($atts);
+    }
+
+    /**
      * Renderizar eventos según layout
      */
     private function render_events($atts)
@@ -112,10 +133,8 @@ class Event_Show_Shortcodes
         $args = array(
             'post_type' => 'evento',
             'post_status' => 'publish',
-            'posts_per_page' => $atts['limit'],
+            'posts_per_page' => -1, // Obtener todos primero para ordenar correctamente
             'meta_key' => '_event_date',
-            'orderby' => 'meta_value',
-            'order' => 'ASC',
         );
 
         // Filtrar eventos pasados
@@ -153,6 +172,36 @@ class Event_Show_Shortcodes
         }
 
         $events = new WP_Query($args);
+
+        // Ordenar eventos por fecha (más próximos primero)
+        if ($events->have_posts()) {
+            $posts_array = $events->posts;
+
+            usort($posts_array, function ($a, $b) {
+                $date_a = get_post_meta($a->ID, '_event_date', true);
+                $time_a = get_post_meta($a->ID, '_event_time', true);
+                $date_b = get_post_meta($b->ID, '_event_date', true);
+                $time_b = get_post_meta($b->ID, '_event_time', true);
+
+                // Convertir fecha dd/mm/yyyy a timestamp
+                $datetime_a = $date_a . ' ' . ($time_a ? $time_a : '00:00');
+                $datetime_b = $date_b . ' ' . ($time_b ? $time_b : '00:00');
+
+                $timestamp_a = strtotime(str_replace('/', '-', $datetime_a));
+                $timestamp_b = strtotime(str_replace('/', '-', $datetime_b));
+
+                return $timestamp_a - $timestamp_b; // Ascendente (más próximos primero)
+            });
+
+            // Limitar el número de resultados según el atributo limit
+            if ($atts['limit'] > 0) {
+                $posts_array = array_slice($posts_array, 0, $atts['limit']);
+            }
+
+            // Reemplazar los posts en el objeto WP_Query
+            $events->posts = $posts_array;
+            $events->post_count = count($posts_array);
+        }
 
         ob_start();
 
