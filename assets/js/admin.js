@@ -165,19 +165,7 @@
    * Inicializar exportación de asistentes
    */
   function initExportAttendees() {
-    $(".export-attendees-btn").on("click", function (e) {
-      e.preventDefault();
-
-      var eventId = $(this).data("event-id");
-      var nonce = $(this).data("nonce");
-
-      window.location.href =
-        ajaxurl +
-        "?action=event_show_export_attendees&event_id=" +
-        eventId +
-        "&nonce=" +
-        nonce;
-    });
+    // Ya no se necesita código aquí porque ahora se usa un enlace directo a la página de asistentes
   }
 
   /**

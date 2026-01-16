@@ -60,6 +60,18 @@ class Event_Show_Metaboxes
             'side',
             'default'
         );
+
+        // Metabox de autor (solo para administradores)
+        if (current_user_can('edit_others_posts')) {
+            add_meta_box(
+                'event_show_author',
+                __('Autor del Evento', 'event-show-base'),
+                array($this, 'render_author_metabox'),
+                'evento',
+                'side',
+                'default'
+            );
+        }
     }
 
     /**
@@ -241,7 +253,7 @@ class Event_Show_Metaboxes
                 <span class="description"><?php esc_html_e('Opcional', 'event-show-base'); ?></span>
             </p>
         </div>
-<?php
+    <?php
     }
 
     /**
@@ -326,6 +338,30 @@ class Event_Show_Metaboxes
             }
         }
 
+        // Cambiar autor del evento (solo administradores)
+        if (current_user_can('edit_others_posts') && isset($_POST['event_author'])) {
+            $new_author_id = absint($_POST['event_author']);
+            if ($new_author_id && $new_author_id !== $post->post_author) {
+                // Remover el hook temporalmente para evitar bucle infinito
+                remove_action('save_post_evento', array($this, 'save_metabox_data'), 10);
+
+                wp_update_post(array(
+                    'ID' => $post_id,
+                    'post_author' => $new_author_id,
+                ));
+
+                // Volver a agregar el hook
+                add_action('save_post_evento', array($this, 'save_metabox_data'), 10, 2);
+
+                Event_Show_Logger::log(
+                    'change_event_author',
+                    'evento',
+                    $post_id,
+                    sprintf(__('Autor del evento "%s" cambiado al usuario ID: %d', 'event-show-base'), get_the_title($post_id), $new_author_id)
+                );
+            }
+        }
+
         // Log de la acción
         Event_Show_Logger::log(
             'update_event',
@@ -333,5 +369,36 @@ class Event_Show_Metaboxes
             $post_id,
             sprintf(__('Evento "%s" actualizado', 'event-show-base'), get_the_title($post_id))
         );
+    }
+
+    /**
+     * Renderizar metabox de autor
+     */
+    public function render_author_metabox($post)
+    {
+        $current_author_id = $post->post_author;
+
+        // Obtener todos los usuarios con capacidad de publicar eventos
+        $users = get_users(array(
+            'orderby' => 'display_name',
+            'order' => 'ASC',
+        ));
+    ?>
+        <div class="event-author-wrap">
+            <p>
+                <label for="event_author"><?php esc_html_e('Seleccionar Autor:', 'event-show-base'); ?></label>
+            </p>
+            <select name="event_author" id="event_author" style="width: 100%;">
+                <?php foreach ($users as $user) : ?>
+                    <option value="<?php echo esc_attr($user->ID); ?>" <?php selected($current_author_id, $user->ID); ?>>
+                        <?php echo esc_html($user->display_name); ?> (<?php echo esc_html($user->user_login); ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <p class="description">
+                <?php esc_html_e('Cambia el propietario de este evento. El nuevo autor podrá editarlo desde su dashboard.', 'event-show-base'); ?>
+            </p>
+        </div>
+<?php
     }
 }

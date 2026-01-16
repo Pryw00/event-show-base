@@ -100,7 +100,13 @@ $user_events = new WP_Query(array(
                                     </span>
                                 </td>
                                 <td>
-                                    <?php echo esc_html($total_attendees); ?>
+                                    <?php if ($total_attendees > 0) : ?>
+                                        <a href="#" class="view-attendees-link" data-event-id="<?php echo esc_attr($event_id); ?>" data-event-title="<?php echo esc_attr(get_the_title()); ?>">
+                                            <?php echo esc_html($total_attendees); ?>
+                                        </a>
+                                    <?php else : ?>
+                                        <?php echo esc_html($total_attendees); ?>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="dashboard-actions">
                                     <a href="<?php the_permalink(); ?>" target="_blank" class="dashboard-action-link">
@@ -109,11 +115,6 @@ $user_events = new WP_Query(array(
                                     <?php if ($can_edit) : ?>
                                         <a href="#" class="dashboard-action-link edit-event-link" data-event-id="<?php echo esc_attr($event_id); ?>">
                                             <?php esc_html_e('Editar', 'event-show-base'); ?>
-                                        </a>
-                                    <?php endif; ?>
-                                    <?php if ($total_attendees > 0) : ?>
-                                        <a href="#" class="dashboard-action-link event-export-attendees" data-event-id="<?php echo esc_attr($event_id); ?>">
-                                            <?php esc_html_e('Exportar', 'event-show-base'); ?>
                                         </a>
                                     <?php endif; ?>
                                 </td>
@@ -145,17 +146,15 @@ $user_events = new WP_Query(array(
                 <span class="modal-close">&times;</span>
                 <h2><?php esc_html_e('Editar Evento', 'event-show-base'); ?></h2>
                 <p class="form-intro"><?php esc_html_e('Al editar el evento, pasará nuevamente a revisión.', 'event-show-base'); ?></p>
-                <form id="edit-event-form">
+                <form id="edit-event-form" enctype="multipart/form-data">
                     <input type="hidden" id="edit_event_id" name="event_id">
                     <div class="form-messages"></div>
-                    <div class="form-group">
-                        <label><?php esc_html_e('Título del Evento', 'event-show-base'); ?> *</label>
-                        <input type="text" id="edit_event_title" name="title" class="form-control" required>
-                    </div>
+                    
                     <div class="form-group">
                         <label><?php esc_html_e('Descripción', 'event-show-base'); ?> *</label>
                         <textarea id="edit_event_description" name="description" class="form-control" rows="6" required></textarea>
                     </div>
+                    
                     <div class="form-row">
                         <div class="form-group form-col-half">
                             <label><?php esc_html_e('Fecha de Inicio', 'event-show-base'); ?> *</label>
@@ -166,6 +165,75 @@ $user_events = new WP_Query(array(
                             <input type="time" id="edit_event_time" name="event_time" class="form-control" required>
                         </div>
                     </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group form-col-half">
+                            <label><?php esc_html_e('Fecha de Fin', 'event-show-base'); ?></label>
+                            <input type="text" id="edit_event_end_date" name="event_end_date" class="form-control event-datepicker">
+                        </div>
+                        <div class="form-group form-col-half">
+                            <label><?php esc_html_e('Hora de Fin', 'event-show-base'); ?></label>
+                            <input type="time" id="edit_event_end_time" name="event_end_time" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><?php esc_html_e('Categoría', 'event-show-base'); ?></label>
+                        <select id="edit_event_category" name="category" class="form-control">
+                            <option value=""><?php esc_html_e('-- Seleccionar --', 'event-show-base'); ?></option>
+                            <?php
+                            $categories = get_terms(array('taxonomy' => 'categoria_evento', 'hide_empty' => false));
+                            foreach ($categories as $cat) {
+                                echo '<option value="' . esc_attr($cat->term_id) . '">' . esc_html($cat->name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><?php esc_html_e('Clasificación de Edad', 'event-show-base'); ?></label>
+                        <select id="edit_event_age" name="age_classification" class="form-control">
+                            <option value=""><?php esc_html_e('-- Seleccionar --', 'event-show-base'); ?></option>
+                            <?php
+                            $age_classifications = get_terms(array('taxonomy' => 'clasificacion_edad', 'hide_empty' => false));
+                            foreach ($age_classifications as $age) {
+                                echo '<option value="' . esc_attr($age->term_id) . '">' . esc_html($age->name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><?php esc_html_e('Lugar', 'event-show-base'); ?></label>
+                        <select id="edit_event_location" name="location" class="form-control">
+                            <option value=""><?php esc_html_e('-- Seleccionar --', 'event-show-base'); ?></option>
+                            <?php
+                            $locations = get_terms(array('taxonomy' => 'lugar', 'hide_empty' => false));
+                            foreach ($locations as $loc) {
+                                echo '<option value="' . esc_attr($loc->term_id) . '">' . esc_html($loc->name) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><?php esc_html_e('Aforo Máximo', 'event-show-base'); ?></label>
+                        <input type="number" id="edit_event_capacity" name="max_attendees" class="form-control" min="0" step="1">
+                        <small class="form-text"><?php esc_html_e('Dejar en blanco para ilimitado', 'event-show-base'); ?></small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><?php esc_html_e('Banner del Evento', 'event-show-base'); ?></label>
+                        <input type="file" id="edit_event_banner" name="banner" class="form-control" accept="image/*">
+                        <div id="edit_banner_preview" style="margin-top: 10px;"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><?php esc_html_e('Imagen para Grid', 'event-show-base'); ?></label>
+                        <input type="file" id="edit_event_grid_image" name="grid_image" class="form-control" accept="image/*">
+                        <div id="edit_grid_image_preview" style="margin-top: 10px;"></div>
+                    </div>
+                    
                     <button type="submit" class="button"><?php esc_html_e('Guardar Cambios', 'event-show-base'); ?></button>
                 </form>
             </div>
@@ -185,7 +253,9 @@ $user_events = new WP_Query(array(
                     'hide_empty' => false,
                     'include' => $user_organizadores,
                 ));
-                foreach ($terms as $org) {
+            ?>
+                <div class="dashboard-grid">
+                <?php foreach ($terms as $org) {
                     $phone = get_term_meta($org->term_id, 'phone', true);
                     $email = get_term_meta($org->term_id, 'email', true);
                     $website = get_term_meta($org->term_id, 'website', true);
@@ -209,8 +279,9 @@ $user_events = new WP_Query(array(
                         <?php endif; ?>
                         <a href="#" class="button edit-organizer-link" data-org-id="<?php echo esc_attr($org->term_id); ?>" data-org-name="<?php echo esc_attr($org->name); ?>" data-org-email="<?php echo esc_attr($email); ?>" data-org-phone="<?php echo esc_attr($phone); ?>" data-org-website="<?php echo esc_attr($website); ?>" data-org-image="<?php echo esc_attr($image); ?>"><?php esc_html_e('Editar Ficha', 'event-show-base'); ?></a>
                     </div>
-                <?php }
-            } else { ?>
+                <?php } ?>
+                </div>
+            <?php } else { ?>
                 <div class="dashboard-empty">
                     <p><?php esc_html_e('No tienes ficha de organizador asociada. Contacta al administrador.', 'event-show-base'); ?></p>
                 </div>
@@ -341,6 +412,23 @@ $user_events = new WP_Query(array(
                         <?php esc_html_e('Cerrar Sesión', 'event-show-base'); ?>
                     </a>
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de asistentes -->
+    <div id="attendees-modal" class="event-modal-overlay" style="display:none;">
+        <div class="event-modal-window">
+            <span class="modal-close">&times;</span>
+            <h2><?php esc_html_e('Asistentes del Evento', 'event-show-base'); ?></h2>
+            <h3 id="attendees-event-title"></h3>
+            <div class="attendees-modal-actions">
+                <button type="button" id="export-attendees-csv" class="button" style="margin-bottom: 15px;">
+                    <?php esc_html_e('Descargar CSV', 'event-show-base'); ?>
+                </button>
+            </div>
+            <div id="attendees-list-container">
+                <p><?php esc_html_e('Cargando...', 'event-show-base'); ?></p>
             </div>
         </div>
     </div>

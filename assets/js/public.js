@@ -35,6 +35,34 @@
     }
   });
 
+  // Previsualización de banner en modal de edición
+  $(document).on("change", "#edit_event_banner", function (e) {
+    var input = this;
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        $("#edit_banner_preview").html('<img src="' + e.target.result + '" style="max-width:100%; height:auto; border-radius:8px;">');
+      };
+      reader.readAsDataURL(input.files[0]);
+    } else {
+      $("#edit_banner_preview").html('');
+    }
+  });
+
+  // Previsualización de imagen grid en modal de edición
+  $(document).on("change", "#edit_event_grid_image", function (e) {
+    var input = this;
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        $("#edit_grid_image_preview").html('<img src="' + e.target.result + '" style="max-width:100%; height:auto; border-radius:8px;">');
+      };
+      reader.readAsDataURL(input.files[0]);
+    } else {
+      $("#edit_grid_image_preview").html('');
+    }
+  });
+
   /**
    * Inicializar cuando el DOM esté listo
    */
@@ -80,10 +108,29 @@
         success: function (response) {
           if (response.success) {
             $("#edit_event_id").val(eventId);
-            $("#edit_event_title").val(response.data.title);
             $("#edit_event_description").val(response.data.description);
             $("#edit_event_date").val(response.data.event_date);
             $("#edit_event_time").val(response.data.event_time);
+            $("#edit_event_end_date").val(response.data.event_end_date || "");
+            $("#edit_event_end_time").val(response.data.event_end_time || "");
+            $("#edit_event_category").val(response.data.category || "");
+            $("#edit_event_age").val(response.data.age_classification || "");
+            $("#edit_event_location").val(response.data.location || "");
+            $("#edit_event_capacity").val(response.data.max_attendees || "");
+            
+            // Mostrar previsualizaciones de imágenes existentes
+            if (response.data.banner_url) {
+              $("#edit_banner_preview").html('<img src="' + response.data.banner_url + '" style="max-width:100%; height:auto; border-radius:8px;">');
+            } else {
+              $("#edit_banner_preview").html('');
+            }
+            
+            if (response.data.grid_image_url) {
+              $("#edit_grid_image_preview").html('<img src="' + response.data.grid_image_url + '" style="max-width:100%; height:auto; border-radius:8px;">');
+            } else {
+              $("#edit_grid_image_preview").html('');
+            }
+            
             $("#edit-event-modal").fadeIn();
           } else {
             alert(response.data.message || "Error al cargar evento");
@@ -525,13 +572,16 @@
 
       $btn.prop("disabled", true).text("Guardando...");
 
+      var formData = new FormData(this);
+      formData.append('action', 'event_show_edit_event');
+      formData.append('nonce', eventShowData.nonce);
+
       $.ajax({
         url: eventShowData.ajaxUrl,
         type: "POST",
-        data:
-          $form.serialize() +
-          "&action=event_show_edit_event&nonce=" +
-          eventShowData.nonce,
+        data: formData,
+        processData: false,
+        contentType: false,
         success: function (response) {
           if (response.success) {
             $messages
@@ -779,16 +829,92 @@
   }
 
   /**
-   * Exportar asistentes
+   * Ver asistentes en modal
    */
-  $(document).on("click", ".event-export-attendees", function (e) {
+  var currentEventIdForExport = null;
+
+  $(document).on("click", ".view-attendees-link", function (e) {
     e.preventDefault();
 
     var eventId = $(this).data("event-id");
+    var eventTitle = $(this).data("event-title");
+
+    currentEventIdForExport = eventId;
+
+    // Mostrar modal
+    $("#attendees-modal").fadeIn();
+    $("#attendees-event-title").text(eventTitle);
+    $("#attendees-list-container").html("<p>Cargando...</p>");
+
+    // Obtener asistentes
+    $.ajax({
+      url: eventShowData.ajaxUrl,
+      type: "POST",
+      data: {
+        action: "event_show_get_attendees",
+        event_id: eventId,
+        nonce: eventShowData.nonce,
+      },
+      success: function (response) {
+        if (response.success) {
+          var attendees = response.data.attendees;
+          if (attendees && attendees.length > 0) {
+            var html = '<table class="dashboard-table">';
+            html += "<thead><tr>";
+            html += "<th>Nombre</th>";
+            html += "<th>Email</th>";
+            html += "<th>Teléfono</th>";
+            html += "<th>Cantidad</th>";
+            html += "<th>Fecha de Registro</th>";
+            html += "</tr></thead>";
+            html += "<tbody>";
+
+            attendees.forEach(function (attendee) {
+              html += "<tr>";
+              html += "<td>" + attendee.name + "</td>";
+              html += "<td>" + attendee.email + "</td>";
+              html += "<td>" + (attendee.phone || "-") + "</td>";
+              html += "<td>" + attendee.num_attendees + "</td>";
+              html += "<td>" + attendee.registration_date + "</td>";
+              html += "</tr>";
+            });
+
+            html += "</tbody></table>";
+            $("#attendees-list-container").html(html);
+          } else {
+            $("#attendees-list-container").html(
+              "<p>No hay asistentes registrados.</p>"
+            );
+          }
+        } else {
+          $("#attendees-list-container").html(
+            "<p>Error al cargar asistentes.</p>"
+          );
+        }
+      },
+      error: function () {
+        $("#attendees-list-container").html(
+          "<p>Error al cargar asistentes.</p>"
+        );
+      },
+    });
+  });
+
+  /**
+   * Exportar asistentes desde modal
+   */
+  $(document).on("click", "#export-attendees-csv", function (e) {
+    e.preventDefault();
+
+    if (!currentEventIdForExport) {
+      alert("Error: No se pudo determinar el evento");
+      return;
+    }
+
     var url =
       eventShowData.ajaxUrl +
       "?action=event_show_export_attendees&event_id=" +
-      eventId +
+      currentEventIdForExport +
       "&nonce=" +
       eventShowData.nonce;
     window.location.href = url;

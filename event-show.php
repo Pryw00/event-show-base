@@ -21,7 +21,7 @@ if (! defined('ABSPATH')) {
 }
 
 // Constantes del plugin
-define('EVENT_SHOW_VERSION', '1.0.1');
+define('EVENT_SHOW_VERSION', '1.0.2');
 define('EVENT_SHOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('EVENT_SHOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('EVENT_SHOW_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -320,7 +320,7 @@ class Event_Show
         // Localizar script
         wp_localize_script(
             'event-show-admin',
-            'eventShowAdminData',
+            'eventShowAdmin',
             array(
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('event_show_admin_nonce'),

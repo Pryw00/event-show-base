@@ -576,3 +576,28 @@
 .event-show-notice.info {
   border-color: var(--es-primary);
 }
+
+/* =======================
+   Metabox de Autor
+   ======================= */
+.event-author-wrap {
+  padding: 10px 0;
+}
+
+.event-author-wrap label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.event-author-wrap select {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.event-author-wrap .description {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+}

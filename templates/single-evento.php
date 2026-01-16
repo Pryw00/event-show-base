@@ -42,159 +42,168 @@ $lugar_map_url = $lugar ? get_term_meta($lugar->term_id, 'map_url', true) : '';
 // URLs de calendario (generación simplificada para evitar recursión)
 $ical_url = admin_url('admin-ajax.php?action=event_show_download_ical&event_id=' . $event_id);
 $google_calendar_url = '#'; // Se generará con JavaScript si es necesario
+
+// Imagen del banner
+$banner_id = get_post_meta($event_id, '_event_banner', true);
+$banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get_the_post_thumbnail_url($event_id, 'full');
 ?>
 
-<article id="event-<?php echo esc_attr($event_id); ?>" <?php post_class('event-show-single'); ?>>
+<article id="event-<?php echo esc_attr($event_id); ?>" <?php post_class('event-show-single event-single-modern'); ?>>
 
-    <!-- Banner/Imagen destacada -->
-    <?php if (has_post_thumbnail()) : ?>
-        <div class="event-banner">
-            <?php the_post_thumbnail('full'); ?>
-        </div>
-    <?php endif; ?>
+    <!-- Hero Banner con información superpuesta -->
+    <div class="event-hero-banner" <?php if ($banner_url) : ?>style="background-image: url('<?php echo esc_url($banner_url); ?>');" <?php endif; ?>>
+        <div class="event-hero-overlay"></div>
+        <div class="event-hero-content">
+            <div class="event-hero-info">
+                <!-- Título del evento -->
+                <h1 class="event-hero-title"><?php the_title(); ?></h1>
 
-    <div class="event-content-wrapper">
-        <!-- Título y botones de acción -->
-        <header class="event-header">
-            <h1 class="event-title"><?php the_title(); ?></h1>
-
-            <div class="event-actions">
-                <!-- Botón compartir -->
-                <button class="event-share-btn" data-event-id="<?php echo esc_attr($event_id); ?>">
-                    <span class="dashicons dashicons-share"></span>
-                    <?php esc_html_e('Compartir', 'event-show-base'); ?>
-                </button>
-
-                <!-- Menú de calendarios -->
-                <div class="event-calendar-dropdown">
-                    <button class="event-calendar-btn">
-                        <span class="dashicons dashicons-calendar-alt"></span>
-                        <?php esc_html_e('Agregar al Calendario', 'event-show-base'); ?>
-                    </button>
-                    <div class="calendar-menu">
-                        <a href="<?php echo esc_url($google_calendar_url); ?>" target="_blank">
-                            <?php esc_html_e('Google Calendar', 'event-show-base'); ?>
-                        </a>
-                        <a href="<?php echo esc_url($ical_url); ?>">
-                            <?php esc_html_e('iCal / Outlook', 'event-show-base'); ?>
-                        </a>
-                    </div>
+                <!-- Fecha y lugar destacados -->
+                <div class="event-hero-meta">
+                    <?php if ($event_date) : ?>
+                        <span class="event-hero-date">
+                            <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'M d')); ?>
+                        </span>
+                    <?php endif; ?>
+                    <?php if ($lugar) : ?>
+                        <span class="event-hero-location">
+                            <?php echo esc_html($lugar->name); ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
             </div>
-        </header>
+        </div>
+    </div>
 
-        <!-- Información del organizador -->
-        <?php if ($organizador) : ?>
-            <div class="event-organizer-card">
-                <strong><?php esc_html_e('Organizado por:', 'event-show-base'); ?></strong>
-                <div class="organizer-info">
+    <div class="event-content-wrapper event-two-columns">
+        <!-- Columna principal (izquierda) -->
+        <div class="event-main-column">
+            <!-- Título y acciones -->
+            <header class="event-header-actions">
+                <h2 class="event-title-section"><?php the_title(); ?></h2>
+                <div class="event-actions">
+                    <button class="event-share-btn" data-event-id="<?php echo esc_attr($event_id); ?>" title="<?php esc_attr_e('Compartir evento', 'event-show-base'); ?>">
+                        <span class="dashicons dashicons-share"></span>
+                    </button>
+                    <a href="<?php echo esc_url($ical_url); ?>" class="event-calendar-btn" title="<?php esc_attr_e('Agregar al calendario', 'event-show-base'); ?>" download>
+                        <span class="dashicons dashicons-calendar-alt"></span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Información del organizador -->
+            <?php if ($organizador) : ?>
+                <div class="event-organizer-inline">
                     <?php if ($organizador_image) : ?>
-                        <div class="organizer-logo">
+                        <div class="organizer-avatar">
                             <?php echo wp_get_attachment_image($organizador_image, 'thumbnail'); ?>
                         </div>
                     <?php endif; ?>
-                    <div class="organizer-details">
-                        <h3><?php echo esc_html($organizador->name); ?></h3>
-                        <?php if ($organizador_phone) : ?>
-                            <p><span class="dashicons dashicons-phone"></span> <?php echo esc_html($organizador_phone); ?></p>
-                        <?php endif; ?>
-                        <?php if ($organizador_email) : ?>
-                            <p><span class="dashicons dashicons-email"></span> <a href="mailto:<?php echo esc_attr($organizador_email); ?>"><?php echo esc_html($organizador_email); ?></a></p>
-                        <?php endif; ?>
-                        <?php if ($organizador_website) : ?>
-                            <p><span class="dashicons dashicons-admin-links"></span> <a href="<?php echo esc_url($organizador_website); ?>" target="_blank"><?php esc_html_e('Sitio Web', 'event-show-base'); ?></a></p>
-                        <?php endif; ?>
+                    <div class="organizer-text">
+                        <span class="organizer-label"><?php esc_html_e('Organizado por', 'event-show-base'); ?></span>
+                        <strong class="organizer-name"><?php echo esc_html($organizador->name); ?></strong>
                     </div>
                 </div>
+            <?php endif; ?>
+
+            <!-- Detalles del evento en grid -->
+            <div class="event-details-grid">
+                <div class="event-detail-card">
+                    <span class="detail-icon dashicons dashicons-calendar"></span>
+                    <div class="detail-info">
+                        <span class="detail-label"><?php esc_html_e('Fecha y hora', 'event-show-base'); ?></span>
+                        <span class="detail-value"><?php echo esc_html(Event_Show_Helpers::format_datetime($event_date, $event_time)); ?></span>
+                    </div>
+                </div>
+
+                <?php if ($lugar) : ?>
+                    <div class="event-detail-card">
+                        <span class="detail-icon dashicons dashicons-location"></span>
+                        <div class="detail-info">
+                            <span class="detail-label"><?php esc_html_e('Lugar', 'event-show-base'); ?></span>
+                            <span class="detail-value"><?php echo esc_html($lugar->name); ?></span>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (! empty($categorias)) : ?>
+                    <div class="event-detail-card">
+                        <span class="detail-icon dashicons dashicons-category"></span>
+                        <div class="detail-info">
+                            <span class="detail-label"><?php esc_html_e('Categoría del evento', 'event-show-base'); ?></span>
+                            <span class="detail-value"><?php echo esc_html($categorias[0]->name); ?></span>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (! empty($clasificaciones)) : ?>
+                    <div class="event-detail-card">
+                        <span class="detail-icon dashicons dashicons-groups"></span>
+                        <div class="detail-info">
+                            <span class="detail-label"><?php esc_html_e('Clasificación de edad', 'event-show-base'); ?></span>
+                            <span class="detail-value"><?php echo esc_html($clasificaciones[0]->name); ?></span>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
-        <?php endif; ?>
 
-        <!-- Detalles principales del evento -->
-        <div class="event-details-box">
-            <div class="event-detail-item">
-                <span class="dashicons dashicons-calendar"></span>
-                <div>
-                    <strong><?php esc_html_e('Fecha y hora', 'event-show-base'); ?></strong>
-                    <p><?php echo esc_html(Event_Show_Helpers::format_datetime($event_date, $event_time)); ?></p>
-                    <?php if ($event_end_date) : ?>
-                        <p><?php echo esc_html__('Hasta:', 'event-show-base') . ' ' . esc_html(Event_Show_Helpers::format_datetime($event_end_date, $event_end_time)); ?></p>
-                    <?php endif; ?>
+            <!-- Descripción del evento -->
+            <div class="event-description-section">
+                <h3 class="section-title"><?php esc_html_e('Descripción', 'event-show-base'); ?></h3>
+                <div class="event-description-content">
+                    <?php
+                    global $wp_filter;
+                    $content_filters_backup = isset($wp_filter['the_content']) ? $wp_filter['the_content'] : null;
+                    remove_all_filters('the_content');
+
+                    $content = get_the_content();
+                    $content = preg_replace('/\[event_show_registration[^\]]*\]/i', '', $content);
+                    $content = wpautop($content);
+                    $content = do_shortcode($content);
+
+                    if ($content_filters_backup) {
+                        $wp_filter['the_content'] = $content_filters_backup;
+                    }
+
+                    echo $content;
+                    ?>
                 </div>
+                <button class="event-read-more-btn" id="toggleDescription">
+                    <?php esc_html_e('Ver más', 'event-show-base'); ?>
+                </button>
             </div>
 
-            <?php if ($lugar) : ?>
-                <div class="event-detail-item">
-                    <span class="dashicons dashicons-location"></span>
-                    <div>
-                        <strong><?php esc_html_e('Lugar', 'event-show-base'); ?></strong>
-                        <p><?php echo esc_html($lugar->name); ?></p>
-                        <?php if ($lugar_address) : ?>
-                            <p><?php echo esc_html($lugar_address); ?></p>
+            <!-- Organizador detallado -->
+            <?php if ($organizador) : ?>
+                <div class="event-organizer-detail">
+                    <div class="organizer-header">
+                        <?php if ($organizador_image) : ?>
+                            <div class="organizer-logo-large">
+                                <?php echo wp_get_attachment_image($organizador_image, 'thumbnail'); ?>
+                            </div>
                         <?php endif; ?>
-                        <?php if ($lugar_map_url) : ?>
-                            <p><a href="<?php echo esc_url($lugar_map_url); ?>" target="_blank"><?php esc_html_e('Ver en Google Maps', 'event-show-base'); ?></a></p>
-                        <?php endif; ?>
+                        <div class="organizer-meta">
+                            <span class="organizer-published-by"><?php esc_html_e('Publicado por', 'event-show-base'); ?></span>
+                            <strong class="organizer-name-large"><?php echo esc_html($organizador->name); ?></strong>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
 
-            <?php if (! empty($categorias)) : ?>
-                <div class="event-detail-item">
-                    <span class="dashicons dashicons-category"></span>
-                    <div>
-                        <strong><?php esc_html_e('Categoría', 'event-show-base'); ?></strong>
-                        <p><?php echo esc_html($categorias[0]->name); ?></p>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <?php if (! empty($clasificaciones)) : ?>
-                <div class="event-detail-item">
-                    <span class="dashicons dashicons-groups"></span>
-                    <div>
-                        <strong><?php esc_html_e('Clasificación de edad', 'event-show-base'); ?></strong>
-                        <p><?php echo esc_html($clasificaciones[0]->name); ?></p>
-                    </div>
-                </div>
-            <?php endif; ?>
         </div>
 
-        <!-- Formulario de registro -->
-        <?php
-        $event_content = get_post_field('post_content', $event_id);
-        if (false === strpos($event_content, '[event_show_registration')) : ?>
-            <div class="event-registration-section">
-                <h2><?php esc_html_e('Registrar Asistencia', 'event-show-base'); ?></h2>
-                <?php echo do_shortcode('[event_show_registration event_id="' . $event_id . '"]'); ?>
+        <!-- Columna lateral (derecha) - Panel de registro -->
+        <aside class="event-sidebar-column">
+            <div class="event-registration-panel">
+                <h3 class="registration-title"><?php esc_html_e('Registro', 'event-show-base'); ?></h3>
+                <?php
+                $event_content = get_post_field('post_content', $event_id);
+                if (false === strpos($event_content, '[event_show_registration')) :
+                    echo do_shortcode('[event_show_registration event_id="' . $event_id . '"]');
+                endif;
+                ?>
             </div>
-        <?php endif; ?>
-
-        <!-- Descripción del evento -->
-        <div class="event-description">
-            <h2><?php esc_html_e('Descripción', 'event-show-base'); ?></h2>
-            <?php
-            // Remover temporalmente TODOS los filtros de the_content para evitar recursión
-            global $wp_filter;
-            $content_filters_backup = isset($wp_filter['the_content']) ? $wp_filter['the_content'] : null;
-            remove_all_filters('the_content');
-
-            $content = get_the_content();
-            // Eliminar el shortcode de registro si está presente
-            $content = preg_replace('/\[event_show_registration[^\]]*\]/i', '', $content);
-
-            // Aplicar filtros básicos de WordPress (wpautop, wptexturize, etc)
-            $content = wpautop($content);
-            $content = do_shortcode($content);
-
-            // Restaurar los filtros originales
-            if ($content_filters_backup) {
-                $wp_filter['the_content'] = $content_filters_backup;
-            }
-
-            echo $content;
-            ?>
-        </div>
-
+        </aside>
     </div>
 </article>
 

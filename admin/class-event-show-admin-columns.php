@@ -96,17 +96,27 @@ class Event_Show_Admin_Columns
                 $total = Event_Show_Attendees::get_total_attendees($post_id);
                 $max = get_post_meta($post_id, '_max_attendees', true);
 
+                $attendees_url = admin_url('edit.php?post_type=evento&page=event-show-attendees&event_id=' . $post_id);
+
                 if ($max) {
                     $percentage = ($total / $max) * 100;
                     $color = $percentage >= 90 ? '#dc3232' : ($percentage >= 70 ? '#f0b849' : '#46b450');
+                    if ($total > 0) {
+                        echo '<a href="' . esc_url($attendees_url) . '" style="text-decoration: none; color: inherit;">';
+                    }
                     echo '<strong style="color: ' . esc_attr($color) . ';">' . esc_html($total) . ' / ' . esc_html($max) . '</strong>';
                     echo '<br><progress value="' . esc_attr($total) . '" max="' . esc_attr($max) . '" style="width: 100%;"></progress>';
+                    if ($total > 0) {
+                        echo '</a>';
+                    }
                 } else {
-                    echo '<strong>' . esc_html($total) . '</strong>';
-                }
-
-                if ($total > 0) {
-                    echo '<br><a href="#" class="event-export-attendees" data-event-id="' . esc_attr($post_id) . '">' . esc_html__('Exportar CSV', 'event-show-base') . '</a>';
+                    if ($total > 0) {
+                        echo '<a href="' . esc_url($attendees_url) . '" style="text-decoration: none; color: #2271b1; font-weight: 600;">';
+                        echo '<strong>' . esc_html($total) . '</strong>';
+                        echo '</a>';
+                    } else {
+                        echo '<strong>' . esc_html($total) . '</strong>';
+                    }
                 }
                 break;
 

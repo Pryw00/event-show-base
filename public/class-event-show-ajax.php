@@ -114,6 +114,9 @@ class Event_Show_Ajax
         add_action('wp_ajax_event_show_get_event_data', array($this, 'get_event_data'));
         add_action('wp_ajax_event_show_edit_event', array($this, 'edit_event'));
 
+        // Obtener asistentes
+        add_action('wp_ajax_event_show_get_attendees', array($this, 'get_attendees'));
+
         // Descargar iCal
         add_action('wp_ajax_event_show_download_ical', array($this, 'download_ical'));
         add_action('wp_ajax_nopriv_event_show_download_ical', array($this, 'download_ical'));
@@ -515,7 +518,31 @@ class Event_Show_Ajax
             'description' => $event->post_content,
             'event_date' => get_post_meta($event_id, '_event_date', true),
             'event_time' => get_post_meta($event_id, '_event_time', true),
+            'event_end_date' => get_post_meta($event_id, '_event_end_date', true),
+            'event_end_time' => get_post_meta($event_id, '_event_end_time', true),
+            'max_attendees' => get_post_meta($event_id, '_max_attendees', true),
+            'category' => $this->get_first_term_id($event_id, 'categoria_evento'),
+            'age_classification' => $this->get_first_term_id($event_id, 'clasificacion_edad'),
+            'location' => $this->get_first_term_id($event_id, 'lugar'),
+            'banner_url' => get_the_post_thumbnail_url($event_id, 'large'),
+            'grid_image_url' => $this->get_grid_image_url($event_id),
         ));
+    }
+
+    /**
+     * Helper: Obtener primer ID de término de una taxonomía
+     */
+    private function get_first_term_id($post_id, $taxonomy) {
+        $terms = wp_get_post_terms($post_id, $taxonomy);
+        return (!empty($terms) && !is_wp_error($terms)) ? $terms[0]->term_id : '';
+    }
+
+    /**
+     * Helper: Obtener URL de imagen grid
+     */
+    private function get_grid_image_url($post_id) {
+        $thumbnail_id = get_post_meta($post_id, '_event_thumbnail', true);
+        return $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : '';
     }
 
     /**
@@ -530,12 +557,17 @@ class Event_Show_Ajax
         }
 
         $event_id = isset($_POST['event_id']) ? intval($_POST['event_id']) : 0;
-        $title = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : '';
         $description = isset($_POST['description']) ? wp_kses_post($_POST['description']) : '';
         $event_date = isset($_POST['event_date']) ? sanitize_text_field($_POST['event_date']) : '';
         $event_time = isset($_POST['event_time']) ? sanitize_text_field($_POST['event_time']) : '';
+        $event_end_date = isset($_POST['event_end_date']) ? sanitize_text_field($_POST['event_end_date']) : '';
+        $event_end_time = isset($_POST['event_end_time']) ? sanitize_text_field($_POST['event_end_time']) : '';
+        $max_attendees = isset($_POST['max_attendees']) ? intval($_POST['max_attendees']) : '';
+        $category = isset($_POST['category']) ? intval($_POST['category']) : 0;
+        $age_classification = isset($_POST['age_classification']) ? intval($_POST['age_classification']) : 0;
+        $location = isset($_POST['location']) ? intval($_POST['location']) : 0;
 
-        if (!$event_id || !$title || !$description || !$event_date || !$event_time) {
+        if (!$event_id || !$description || !$event_date || !$event_time) {
             wp_send_json_error(array('message' => __('Faltan datos obligatorios', 'event-show-base')));
         }
 
@@ -555,7 +587,6 @@ class Event_Show_Ajax
         // Actualizar evento y cambiar estado a pending
         $updated = wp_update_post(array(
             'ID' => $event_id,
-            'post_title' => $title,
             'post_content' => $description,
             'post_status' => 'pending', // Volver a revisión
         ));
@@ -567,17 +598,86 @@ class Event_Show_Ajax
         // Actualizar metadatos
         update_post_meta($event_id, '_event_date', $event_date);
         update_post_meta($event_id, '_event_time', $event_time);
+        update_post_meta($event_id, '_event_end_date', $event_end_date);
+        update_post_meta($event_id, '_event_end_time', $event_end_time);
+        update_post_meta($event_id, '_max_attendees', $max_attendees);
+
+        // Actualizar taxonomías
+        if ($category) {
+            wp_set_post_terms($event_id, array($category), 'categoria_evento');
+        }
+        if ($age_classification) {
+            wp_set_post_terms($event_id, array($age_classification), 'clasificacion_edad');
+        }
+        if ($location) {
+            wp_set_post_terms($event_id, array($location), 'lugar');
+        }
+
+        // Procesar banner (imagen destacada)
+        if (!empty($_FILES['banner']['name'])) {
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
+            
+            $attachment_id = media_handle_upload('banner', $event_id);
+            if (!is_wp_error($attachment_id)) {
+                set_post_thumbnail($event_id, $attachment_id);
+            }
+        }
+
+        // Procesar imagen grid
+        if (!empty($_FILES['grid_image']['name'])) {
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
+            
+            $attachment_id = media_handle_upload('grid_image', $event_id);
+            if (!is_wp_error($attachment_id)) {
+                update_post_meta($event_id, '_event_thumbnail', $attachment_id);
+            }
+        }
 
         // Log
         Event_Show_Logger::log(
             'event_edited',
             'evento',
             $event_id,
-            sprintf(__('Evento "%s" editado y enviado a revisión', 'event-show-base'), $title)
+            sprintf(__('Evento "%s" editado y enviado a revisión', 'event-show-base'), $event->post_title)
         );
 
         wp_send_json_success(array(
             'message' => __('Evento actualizado correctamente. Pasará a revisión nuevamente.', 'event-show-base'),
+        ));
+    }
+
+    /**
+     * AJAX: Obtener asistentes de un evento
+     */
+    public function get_attendees()
+    {
+        check_ajax_referer('event_show_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => __('Debes iniciar sesión', 'event-show-base')));
+        }
+
+        $event_id = isset($_POST['event_id']) ? intval($_POST['event_id']) : 0;
+        if (!$event_id) {
+            wp_send_json_error(array('message' => __('ID de evento inválido', 'event-show-base')));
+        }
+
+        // Verificar que el usuario es el autor del evento
+        $event = get_post($event_id);
+        if (!$event || $event->post_author != get_current_user_id()) {
+            wp_send_json_error(array('message' => __('No tienes permisos para ver estos asistentes', 'event-show-base')));
+        }
+
+        // Obtener asistentes
+        $attendees = Event_Show_Attendees::get_attendees($event_id);
+
+        wp_send_json_success(array(
+            'attendees' => $attendees,
+            'total' => count($attendees),
         ));
     }
 }

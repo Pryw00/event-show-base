@@ -40,6 +40,7 @@ class Event_Show_Admin
         // AJAX para gestión de asistentes
         add_action('wp_ajax_event_show_export_attendees', array($this, 'ajax_export_attendees'));
         add_action('wp_ajax_event_show_delete_attendee', array($this, 'ajax_delete_attendee'));
+
         // Campos de organizador en perfil de usuario
         add_action('show_user_profile', array($this, 'user_organizador_fields'));
         add_action('edit_user_profile', array($this, 'user_organizador_fields'));
@@ -112,6 +113,15 @@ class Event_Show_Admin
             'manage_options',
             'event-show-logs',
             array($this, 'render_logs_page')
+        );
+
+        add_submenu_page(
+            'edit.php?post_type=evento',
+            __('Asistentes', 'event-show-base'),
+            __('Asistentes', 'event-show-base'),
+            'edit_posts',
+            'event-show-attendees',
+            array($this, 'render_attendees_page')
         );
     }
 
@@ -287,6 +297,129 @@ class Event_Show_Admin
                 </tbody>
             </table>
         </div>
+    <?php
+    }
+
+    /**
+     * Renderizar página de asistentes
+     */
+    public function render_attendees_page()
+    {
+        // Obtener evento seleccionado
+        $selected_event_id = isset($_GET['event_id']) ? absint($_GET['event_id']) : 0;
+
+        // Obtener todos los eventos
+        $events = get_posts(array(
+            'post_type' => 'evento',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'orderby' => 'date',
+            'order' => 'DESC',
+        ));
+
+        // Obtener asistentes si hay evento seleccionado
+        $attendees = array();
+        $event_title = '';
+        if ($selected_event_id) {
+            $attendees = Event_Show_Attendees::get_attendees($selected_event_id);
+            $event_title = get_the_title($selected_event_id);
+        }
+    ?>
+        <div class="wrap">
+            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+
+            <div class="tablenav top" style="margin: 20px 0;">
+                <div class="alignleft actions">
+                    <label for="event-select"><?php esc_html_e('Seleccionar Evento:', 'event-show-base'); ?></label>
+                    <select id="event-select" name="event_id" style="min-width: 300px;">
+                        <option value=""><?php esc_html_e('-- Selecciona un evento --', 'event-show-base'); ?></option>
+                        <?php foreach ($events as $event) : ?>
+                            <option value="<?php echo esc_attr($event->ID); ?>" <?php selected($selected_event_id, $event->ID); ?>>
+                                <?php echo esc_html($event->post_title); ?>
+                                (<?php echo esc_html(get_post_meta($event->ID, '_event_date', true)); ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php if ($selected_event_id && !empty($attendees)) : ?>
+                    <div class="alignright actions">
+                        <a href="<?php echo esc_url(admin_url('admin-ajax.php?action=event_show_export_attendees&event_id=' . $selected_event_id . '&nonce=' . wp_create_nonce('event_show_admin_nonce'))); ?>" class="button button-primary">
+                            <?php esc_html_e('Descargar CSV', 'event-show-base'); ?>
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($selected_event_id) : ?>
+                <h2><?php echo esc_html($event_title); ?></h2>
+                <p><?php printf(esc_html__('Total de asistentes: %d', 'event-show-base'), count($attendees)); ?></p>
+
+                <?php if (!empty($attendees)) : ?>
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Nombre', 'event-show-base'); ?></th>
+                                <th><?php esc_html_e('Email', 'event-show-base'); ?></th>
+                                <th><?php esc_html_e('Teléfono', 'event-show-base'); ?></th>
+                                <th><?php esc_html_e('Cantidad', 'event-show-base'); ?></th>
+                                <th><?php esc_html_e('Fecha de Registro', 'event-show-base'); ?></th>
+                                <th><?php esc_html_e('Estado', 'event-show-base'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($attendees as $attendee) : ?>
+                                <tr>
+                                    <td><?php echo esc_html($attendee['name']); ?></td>
+                                    <td><?php echo esc_html($attendee['email']); ?></td>
+                                    <td><?php echo esc_html($attendee['phone'] ?: '-'); ?></td>
+                                    <td><?php echo esc_html($attendee['num_attendees']); ?></td>
+                                    <td><?php echo esc_html($attendee['registration_date']); ?></td>
+                                    <td>
+                                        <span class="status-<?php echo esc_attr($attendee['status']); ?>">
+                                            <?php echo esc_html(ucfirst($attendee['status'])); ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php else : ?>
+                    <p><?php esc_html_e('No hay asistentes registrados para este evento.', 'event-show-base'); ?></p>
+                <?php endif; ?>
+            <?php else : ?>
+                <p><?php esc_html_e('Selecciona un evento para ver sus asistentes.', 'event-show-base'); ?></p>
+            <?php endif; ?>
+        </div>
+
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                $('#event-select').on('change', function() {
+                    var eventId = $(this).val();
+                    if (eventId) {
+                        window.location.href = '<?php echo admin_url('edit.php?post_type=evento&page=event-show-attendees&event_id='); ?>' + eventId;
+                    } else {
+                        window.location.href = '<?php echo admin_url('edit.php?post_type=evento&page=event-show-attendees'); ?>';
+                    }
+                });
+            });
+        </script>
+
+        <style>
+            .status-confirmed {
+                color: #46b450;
+                font-weight: 600;
+            }
+
+            .status-pending {
+                color: #f0b849;
+                font-weight: 600;
+            }
+
+            .status-cancelled {
+                color: #dc3232;
+                font-weight: 600;
+            }
+        </style>
     <?php
     }
 
@@ -483,16 +616,36 @@ class Event_Show_Admin
      */
     public function ajax_export_attendees()
     {
-        check_ajax_referer('event_show_admin_nonce', 'nonce');
-
-        if (! current_user_can('edit_posts')) {
-            wp_send_json_error(__('Permisos insuficientes', 'event-show-base'));
+        // Verificar nonce de admin o frontend
+        $nonce_verified = false;
+        if (isset($_REQUEST['nonce'])) {
+            if (wp_verify_nonce($_REQUEST['nonce'], 'event_show_admin_nonce')) {
+                $nonce_verified = true;
+            } elseif (wp_verify_nonce($_REQUEST['nonce'], 'event_show_nonce')) {
+                $nonce_verified = true;
+            }
         }
 
-        $event_id = isset($_POST['event_id']) ? absint($_POST['event_id']) : 0;
+        if (!$nonce_verified) {
+            wp_die(__('Verificación de seguridad fallida', 'event-show-base'));
+        }
 
-        if (! $event_id) {
-            wp_send_json_error(__('ID de evento inválido', 'event-show-base'));
+        $event_id = isset($_REQUEST['event_id']) ? absint($_REQUEST['event_id']) : 0;
+
+        if (!$event_id) {
+            wp_die(__('ID de evento inválido', 'event-show-base'));
+        }
+
+        // Si es usuario frontend, verificar que sea el autor del evento
+        if (!current_user_can('edit_posts')) {
+            if (!is_user_logged_in()) {
+                wp_die(__('Debes iniciar sesión', 'event-show-base'));
+            }
+
+            $event = get_post($event_id);
+            if (!$event || $event->post_author != get_current_user_id()) {
+                wp_die(__('No tienes permisos para exportar estos asistentes', 'event-show-base'));
+            }
         }
 
         Event_Show_Attendees::export_csv($event_id);
