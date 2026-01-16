@@ -78,6 +78,14 @@ $user_events = new WP_Query(array(
                             );
 
                             $status_info = isset($status_labels[$status]) ? $status_labels[$status] : array('label' => $status, 'class' => 'status-default');
+                            
+                            // Verificar si se puede editar (7 días antes del evento)
+                            $can_edit = false;
+                            if ($event_date) {
+                                $event_timestamp = strtotime(str_replace('/', '-', $event_date));
+                                $days_until_event = floor(($event_timestamp - time()) / (60 * 60 * 24));
+                                $can_edit = $days_until_event >= 7;
+                            }
                         ?>
                             <tr>
                                 <td>
@@ -98,6 +106,11 @@ $user_events = new WP_Query(array(
                                     <a href="<?php the_permalink(); ?>" target="_blank" class="dashboard-action-link">
                                         <?php esc_html_e('Ver', 'event-show-base'); ?>
                                     </a>
+                                    <?php if ($can_edit) : ?>
+                                        <a href="#" class="dashboard-action-link edit-event-link" data-event-id="<?php echo esc_attr($event_id); ?>">
+                                            <?php esc_html_e('Editar', 'event-show-base'); ?>
+                                        </a>
+                                    <?php endif; ?>
                                     <?php if ($total_attendees > 0) : ?>
                                         <a href="#" class="dashboard-action-link event-export-attendees" data-event-id="<?php echo esc_attr($event_id); ?>">
                                             <?php esc_html_e('Exportar', 'event-show-base'); ?>
@@ -123,6 +136,38 @@ $user_events = new WP_Query(array(
             <div class="event-modal-window">
                 <span class="modal-close">&times;</span>
                 <?php include EVENT_SHOW_PLUGIN_DIR . 'templates/submit-event-form.php'; ?>
+            </div>
+        </div>
+
+        <!-- Modal editar evento -->
+        <div id="edit-event-modal" class="event-modal-overlay" style="display:none;">
+            <div class="event-modal-window">
+                <span class="modal-close">&times;</span>
+                <h2><?php esc_html_e('Editar Evento', 'event-show-base'); ?></h2>
+                <p class="form-intro"><?php esc_html_e('Al editar el evento, pasará nuevamente a revisión.', 'event-show-base'); ?></p>
+                <form id="edit-event-form">
+                    <input type="hidden" id="edit_event_id" name="event_id">
+                    <div class="form-messages"></div>
+                    <div class="form-group">
+                        <label><?php esc_html_e('Título del Evento', 'event-show-base'); ?> *</label>
+                        <input type="text" id="edit_event_title" name="title" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label><?php esc_html_e('Descripción', 'event-show-base'); ?> *</label>
+                        <textarea id="edit_event_description" name="description" class="form-control" rows="6" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group form-col-half">
+                            <label><?php esc_html_e('Fecha de Inicio', 'event-show-base'); ?> *</label>
+                            <input type="text" id="edit_event_date" name="event_date" class="form-control event-datepicker" required>
+                        </div>
+                        <div class="form-group form-col-half">
+                            <label><?php esc_html_e('Hora de Inicio', 'event-show-base'); ?> *</label>
+                            <input type="time" id="edit_event_time" name="event_time" class="form-control" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="button"><?php esc_html_e('Guardar Cambios', 'event-show-base'); ?></button>
+                </form>
             </div>
         </div>
 

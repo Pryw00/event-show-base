@@ -40,10 +40,11 @@ $current_user = wp_get_current_user();
             <p class="description"><?php esc_html_e('Describe tu evento en detalle', 'event-show-base'); ?></p>
         </div>
 
+
         <div class="form-row">
             <div class="form-group form-col-half">
                 <label for="event_date_submit">
-                    <?php esc_html_e('Fecha del Evento', 'event-show-base'); ?> *
+                    <?php esc_html_e('Fecha de Inicio', 'event-show-base'); ?> *
                 </label>
                 <input type="text"
                     id="event_date_submit"
@@ -52,7 +53,6 @@ $current_user = wp_get_current_user();
                     placeholder="dd/mm/yyyy"
                     required>
             </div>
-
             <div class="form-group form-col-half">
                 <label for="event_time_submit">
                     <?php esc_html_e('Hora de Inicio', 'event-show-base'); ?> *
@@ -63,6 +63,42 @@ $current_user = wp_get_current_user();
                     class="form-control"
                     required>
             </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group form-col-half">
+                <label for="event_date_end">
+                    <?php esc_html_e('Fecha de Fin', 'event-show-base'); ?>
+                </label>
+                <input type="text"
+                    id="event_date_end"
+                    name="event_date_end"
+                    class="form-control event-datepicker"
+                    placeholder="dd/mm/yyyy">
+            </div>
+            <div class="form-group form-col-half">
+                <label for="event_time_end">
+                    <?php esc_html_e('Hora de Fin', 'event-show-base'); ?>
+                </label>
+                <input type="time"
+                    id="event_time_end"
+                    name="event_time_end"
+                    class="form-control">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="event_banner">
+                <?php esc_html_e('Imagen Banner (obligatoria)', 'event-show-base'); ?> *
+            </label>
+            <input type="file" id="event_banner" name="event_banner" class="form-control" accept="image/*" required>
+            <img id="event_banner_preview" src="" alt="" style="max-width:120px; max-height:60px; display:none; margin-top:10px; border-radius:8px; background:#f4f4f4;">
+        </div>
+        <div class="form-group">
+            <label for="event_thumbnail">
+                <?php esc_html_e('Miniatura (obligatoria)', 'event-show-base'); ?> *
+            </label>
+            <input type="file" id="event_thumbnail" name="event_thumbnail" class="form-control" accept="image/*" required>
+            <img id="event_thumbnail_preview" src="" alt="" style="max-width:60px; max-height:60px; display:none; margin-top:10px; border-radius:8px; background:#f4f4f4;">
         </div>
 
         <div class="form-group">
