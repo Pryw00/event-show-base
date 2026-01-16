@@ -489,13 +489,13 @@ class Event_Show_Ajax
         }
 
         $event_id = isset($_POST['event_id']) ? intval($_POST['event_id']) : 0;
-        
+
         if (!$event_id) {
             wp_send_json_error(array('message' => __('ID de evento inválido', 'event-show-base')));
         }
 
         $event = get_post($event_id);
-        
+
         if (!$event || $event->post_author != get_current_user_id()) {
             wp_send_json_error(array('message' => __('No tienes permiso para editar este evento', 'event-show-base')));
         }
@@ -540,7 +540,7 @@ class Event_Show_Ajax
         }
 
         $event = get_post($event_id);
-        
+
         if (!$event || $event->post_author != get_current_user_id()) {
             wp_send_json_error(array('message' => __('No tienes permiso para editar este evento', 'event-show-base')));
         }

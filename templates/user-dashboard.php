@@ -78,7 +78,7 @@ $user_events = new WP_Query(array(
                             );
 
                             $status_info = isset($status_labels[$status]) ? $status_labels[$status] : array('label' => $status, 'class' => 'status-default');
-                            
+
                             // Verificar si se puede editar (7 días antes del evento)
                             $can_edit = false;
                             if ($event_date) {
