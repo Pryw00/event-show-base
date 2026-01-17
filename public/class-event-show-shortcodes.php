@@ -44,7 +44,7 @@ class Event_Show_Shortcodes
             'category' => '',
             'age_rating' => '',
             'limit' => get_option('event_show_events_per_page', 12),
-            'show_past' => 'no',
+            'show' => 'upcoming', // upcoming|past|all
         ));
 
         return $this->render_events($atts);
@@ -62,7 +62,7 @@ class Event_Show_Shortcodes
             'category' => '',
             'age_rating' => '',
             'limit' => get_option('event_show_events_per_page', 12),
-            'show_past' => 'no',
+            'show' => 'upcoming',
         ));
 
         return $this->render_events($atts);
@@ -80,7 +80,7 @@ class Event_Show_Shortcodes
             'category' => '',
             'age_rating' => '',
             'limit' => -1,
-            'show_past' => 'no',
+            'show' => 'upcoming',
         ));
 
         return $this->render_events($atts);
@@ -99,7 +99,7 @@ class Event_Show_Shortcodes
             'age_rating' => '',
             'limit' => 6,
             'show_countdown' => 'yes',
-            'show_past' => 'no',
+            'show' => 'upcoming',
         ));
 
         return $this->render_events($atts);
@@ -119,7 +119,7 @@ class Event_Show_Shortcodes
             'limit' => 5,
             'autoplay' => 'true',
             'autoplay_speed' => 5000,
-            'show_past' => 'no',
+            'show' => 'upcoming',
         ));
 
         return $this->render_events($atts);
@@ -130,24 +130,12 @@ class Event_Show_Shortcodes
      */
     private function render_events($atts)
     {
+        // Obtener TODOS los eventos publicados primero, luego filtrar manualmente
         $args = array(
             'post_type' => 'evento',
             'post_status' => 'publish',
-            'posts_per_page' => -1, // Obtener todos primero para ordenar correctamente
-            'meta_key' => '_event_date',
+            'posts_per_page' => -1,
         );
-
-        // Filtrar eventos pasados
-        if ('no' === $atts['show_past']) {
-            $args['meta_query'] = array(
-                array(
-                    'key' => '_event_date',
-                    'value' => date('d/m/Y'),
-                    'compare' => '>=',
-                    'type' => 'DATE',
-                ),
-            );
-        }
 
         // Filtrar por categoría
         if (! empty($atts['category'])) {
@@ -173,34 +161,88 @@ class Event_Show_Shortcodes
 
         $events = new WP_Query($args);
 
-        // Ordenar eventos por fecha (más próximos primero)
+        // Timestamp actual para comparar
+        $now = time();
+
+        // Función para normalizar fechas dd/mm/yyyy a Y-m-d
+        $normalize_date = function ($date) {
+            if (!$date) return '';
+            $parts = explode('/', $date);
+            if (count($parts) === 3) {
+                $d = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+                $m = str_pad($parts[1], 2, '0', STR_PAD_LEFT);
+                $y = $parts[2];
+                return "$y-$m-$d";
+            }
+            return $date;
+        };
+
+        // Ordenar y filtrar eventos por fecha/hora
+        $filtered_ids = array();
         if ($events->have_posts()) {
-            $posts_array = $events->posts;
+            $posts_data = array();
 
-            usort($posts_array, function ($a, $b) {
-                $date_a = get_post_meta($a->ID, '_event_date', true);
-                $time_a = get_post_meta($a->ID, '_event_time', true);
-                $date_b = get_post_meta($b->ID, '_event_date', true);
-                $time_b = get_post_meta($b->ID, '_event_time', true);
+            while ($events->have_posts()) {
+                $events->the_post();
+                $post_id = get_the_ID();
+                $start_date = get_post_meta($post_id, '_event_date', true);
+                $start_time = get_post_meta($post_id, '_event_time', true);
+                $end_date = get_post_meta($post_id, '_event_end_date', true);
+                $end_time = get_post_meta($post_id, '_event_end_time', true);
 
-                // Convertir fecha dd/mm/yyyy a timestamp
-                $datetime_a = $date_a . ' ' . ($time_a ? $time_a : '00:00');
-                $datetime_b = $date_b . ' ' . ($time_b ? $time_b : '00:00');
+                // Fecha para ordenar (inicio)
+                $sort_datetime = $normalize_date($start_date) . ' ' . ($start_time ? $start_time : '00:00');
+                $sort_timestamp = strtotime($sort_datetime);
 
-                $timestamp_a = strtotime(str_replace('/', '-', $datetime_a));
-                $timestamp_b = strtotime(str_replace('/', '-', $datetime_b));
+                // Fecha para filtrar (fin si existe, si no inicio)
+                $filter_date = $end_date ? $end_date : $start_date;
+                $filter_time = $end_time ? $end_time : ($end_date ? '23:59' : ($start_time ? $start_time : '00:00'));
+                $filter_datetime = $normalize_date($filter_date) . ' ' . $filter_time;
+                $filter_timestamp = strtotime($filter_datetime);
 
-                return $timestamp_a - $timestamp_b; // Ascendente (más próximos primero)
+                $posts_data[] = array(
+                    'id' => $post_id,
+                    'sort_timestamp' => $sort_timestamp,
+                    'filter_timestamp' => $filter_timestamp,
+                );
+            }
+            wp_reset_postdata();
+
+            // Ordenar por fecha de inicio
+            usort($posts_data, function ($a, $b) {
+                return $a['sort_timestamp'] - $b['sort_timestamp'];
             });
 
-            // Limitar el número de resultados según el atributo limit
-            if ($atts['limit'] > 0) {
-                $posts_array = array_slice($posts_array, 0, $atts['limit']);
+            // Filtrar según show
+            foreach ($posts_data as $data) {
+                $include = true;
+                if (!isset($atts['show']) || $atts['show'] === 'upcoming') {
+                    $include = ($data['filter_timestamp'] >= $now);
+                } elseif ($atts['show'] === 'past') {
+                    $include = ($data['filter_timestamp'] < $now);
+                }
+                if ($include) {
+                    $filtered_ids[] = $data['id'];
+                }
             }
 
-            // Reemplazar los posts en el objeto WP_Query
-            $events->posts = $posts_array;
-            $events->post_count = count($posts_array);
+            // Aplicar límite
+            if ($atts['limit'] > 0) {
+                $filtered_ids = array_slice($filtered_ids, 0, $atts['limit']);
+            }
+        }
+
+        // Crear nuevo WP_Query solo con los IDs filtrados
+        if (!empty($filtered_ids)) {
+            $events = new WP_Query(array(
+                'post_type' => 'evento',
+                'post__in' => $filtered_ids,
+                'orderby' => 'post__in',
+                'posts_per_page' => -1,
+            ));
+        } else {
+            // Sin eventos que mostrar
+            $events = new WP_Query(array('post__in' => array(0)));
         }
 
         ob_start();

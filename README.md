@@ -97,7 +97,7 @@ Event Show es un plugin completo para WordPress que permite crear, gestionar y p
 #### Vista Grid
 
 ```
-[event_show_grid category="" limit="12" columns="3"]
+[event_show_grid category="" limit="12" columns="3" show="upcoming"]
 ```
 
 Parámetros:
@@ -105,43 +105,47 @@ Parámetros:
 - `category`: ID de categoría para filtrar
 - `limit`: Número de eventos a mostrar
 - `columns`: Número de columnas (2, 3 o 4)
+- `show`: "upcoming" (próximos, default), "past" (pasados), "all" (todos)
 
 #### Vista Lista
 
 ```
-[event_show_list category="" limit="10"]
+[event_show_list category="" limit="10" show="upcoming"]
 ```
 
 Parámetros:
 
 - `category`: ID de categoría para filtrar
 - `limit`: Número de eventos a mostrar
+- `show`: "upcoming" (próximos, default), "past" (pasados), "all" (todos)
 
 #### Vista Calendario
 
 ```
-[event_show_calendar category=""]
+[event_show_calendar category="" show="upcoming"]
 ```
 
 Parámetros:
 
 - `category`: ID de categoría para filtrar
+- `show`: "upcoming" (próximos, default), "past" (pasados), "all" (todos)
 
 #### Carrusel
 
 ```
-[event_show_carousel limit="5" autoplay="true"]
+[event_show_carousel limit="5" autoplay="true" show="upcoming"]
 ```
 
 Parámetros:
 
 - `limit`: Número de eventos en el carrusel
 - `autoplay`: Activar rotación automática (true/false)
+- `show`: "upcoming" (próximos, default), "past" (pasados), "all" (todos)
 
 #### Slider
 
 ```
-[event_show_slider limit="5" autoplay="true" autoplay_speed="5000"]
+[event_show_slider limit="5" autoplay="true" autoplay_speed="5000" show="upcoming"]
 ```
 
 Muestra eventos con un diseño moderno: panel de información a la izquierda y slider de imágenes/posters a la derecha con efecto de profundidad.
@@ -152,6 +156,7 @@ Parámetros:
 - `category`: ID de categoría para filtrar
 - `autoplay`: Activar rotación automática (true/false)
 - `autoplay_speed`: Velocidad de rotación en milisegundos (default: 5000)
+- `show`: "upcoming" (próximos, default), "past" (pasados), "all" (todos)
 
 #### Formulario de registro
 
