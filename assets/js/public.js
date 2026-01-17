@@ -44,7 +44,7 @@
         $("#edit_banner_preview").html(
           '<img src="' +
             e.target.result +
-            '" style="max-width:100%; height:auto; border-radius:8px;">'
+            '" style="max-width:100%; height:auto; border-radius:8px;">',
         );
       };
       reader.readAsDataURL(input.files[0]);
@@ -62,7 +62,7 @@
         $("#edit_grid_image_preview").html(
           '<img src="' +
             e.target.result +
-            '" style="max-width:100%; height:auto; border-radius:8px;">'
+            '" style="max-width:100%; height:auto; border-radius:8px;">',
         );
       };
       reader.readAsDataURL(input.files[0]);
@@ -77,6 +77,9 @@
   $(document).ready(function () {
     // Formulario de registro de asistentes
     initRegistrationForm();
+
+    // Modal de registro (shortcode)
+    initRegistrationModal();
 
     // Formulario de envío de eventos
     initSubmitEventForm();
@@ -131,7 +134,7 @@
               $("#edit_banner_preview").html(
                 '<img src="' +
                   response.data.banner_url +
-                  '" style="max-width:100%; height:auto; border-radius:8px;">'
+                  '" style="max-width:100%; height:auto; border-radius:8px;">',
               );
             } else {
               $("#edit_banner_preview").html("");
@@ -141,7 +144,7 @@
               $("#edit_grid_image_preview").html(
                 '<img src="' +
                   response.data.grid_image_url +
-                  '" style="max-width:100%; height:auto; border-radius:8px;">'
+                  '" style="max-width:100%; height:auto; border-radius:8px;">',
               );
             } else {
               $("#edit_grid_image_preview").html("");
@@ -262,8 +265,119 @@
             {
               scrollTop: $messages.offset().top - 100,
             },
-            500
+            500,
           );
+        },
+      });
+    });
+  }
+
+  /**
+   * Inicializar modal de registro (shortcode)
+   */
+  function initRegistrationModal() {
+    // Abrir modal al hacer clic en el botón trigger
+    $(document).on("click", ".event-registration-trigger-btn", function (e) {
+      e.preventDefault();
+      var modalId = $(this).data("modal-id");
+      var $modal = $("#" + modalId);
+
+      if ($modal.length) {
+        $modal.fadeIn(200);
+        $("body").addClass("modal-open");
+
+        // Limpiar mensajes previos
+        $modal.find(".form-messages").removeClass("success error").hide();
+      }
+    });
+
+    // Cerrar modal al hacer clic en el botón de cerrar
+    $(document).on("click", ".event-registration-modal-close", function (e) {
+      e.preventDefault();
+      var $modal = $(this).closest(".event-registration-modal-overlay");
+      closeRegistrationModal($modal);
+    });
+
+    // Cerrar modal al hacer clic en el overlay
+    $(document).on("click", ".event-registration-modal-overlay", function (e) {
+      if ($(e.target).is(".event-registration-modal-overlay")) {
+        closeRegistrationModal($(this));
+      }
+    });
+
+    // Cerrar modal con tecla Escape
+    $(document).on("keydown", function (e) {
+      if (e.key === "Escape") {
+        var $openModal = $(".event-registration-modal-overlay:visible");
+        if ($openModal.length) {
+          closeRegistrationModal($openModal);
+        }
+      }
+    });
+
+    // Función para cerrar el modal
+    function closeRegistrationModal($modal) {
+      $modal.fadeOut(200, function () {
+        $("body").removeClass("modal-open");
+      });
+    }
+
+    // Manejar envío del formulario de registro de asistentes
+    $(document).on("submit", ".event-registration-form", function (e) {
+      e.preventDefault();
+
+      var $form = $(this);
+      var $btn = $form.find(".event-register-btn");
+      var $messages = $form.find(".form-messages");
+
+      // Deshabilitar botón y mostrar loading
+      $btn.prop("disabled", true);
+      $btn.find(".btn-text").hide();
+      $btn.find(".btn-loading").show();
+
+      $.ajax({
+        url: eventShowData.ajaxUrl,
+        type: "POST",
+        data: $form.serialize(),
+        success: function (response) {
+          if (response.success) {
+            $messages
+              .removeClass("error")
+              .addClass("success")
+              .html(response.data.message)
+              .show();
+            $form[0].reset();
+
+            // Cerrar modal después de éxito (opcional, con delay)
+            setTimeout(function () {
+              var $modal = $form.closest(".event-registration-modal-overlay");
+              if ($modal.length) {
+                closeRegistrationModal($modal);
+              }
+            }, 2500);
+          } else {
+            $messages
+              .removeClass("success")
+              .addClass("error")
+              .html(response.data.message)
+              .show();
+          }
+        },
+        error: function () {
+          $messages
+            .removeClass("success")
+            .addClass("error")
+            .html(
+              eventShowData.i18n && eventShowData.i18n.error
+                ? eventShowData.i18n.error
+                : "Error al procesar la solicitud",
+            )
+            .show();
+        },
+        complete: function () {
+          $btn.prop("disabled", false);
+          $btn.find(".btn-text").show();
+          $btn.find(".btn-loading").hide();
         },
       });
     });
@@ -322,7 +436,7 @@
             {
               scrollTop: $messages.offset().top - 100,
             },
-            500
+            500,
           );
         },
       });
@@ -494,7 +608,7 @@
                 $("<option>", {
                   value: response.data.term_id,
                   text: response.data.term_name,
-                })
+                }),
               )
               .val(response.data.term_id);
 
@@ -899,18 +1013,18 @@
             $("#attendees-list-container").html(html);
           } else {
             $("#attendees-list-container").html(
-              "<p>No hay asistentes registrados.</p>"
+              "<p>No hay asistentes registrados.</p>",
             );
           }
         } else {
           $("#attendees-list-container").html(
-            "<p>Error al cargar asistentes.</p>"
+            "<p>Error al cargar asistentes.</p>",
           );
         }
       },
       error: function () {
         $("#attendees-list-container").html(
-          "<p>Error al cargar asistentes.</p>"
+          "<p>Error al cargar asistentes.</p>",
         );
       },
     });

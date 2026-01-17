@@ -74,6 +74,290 @@
 .event-modal-window button.button {
   margin-top: 10px;
 }
+
+/* ===========================
+   Modal de Registro (Shortcode)
+   =========================== */
+.event-registration-shortcode {
+  display: inline-block;
+}
+
+/* Botón trigger del modal */
+.event-registration-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: var(--event-primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--event-font-body);
+  cursor: pointer;
+  transition: var(--event-transition);
+  box-shadow: 0 4px 15px rgba(236, 98, 183, 0.3);
+}
+
+.event-registration-trigger-btn:hover {
+  background: var(--event-secondary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 86, 185, 0.3);
+}
+
+.event-registration-trigger-btn .btn-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Overlay del modal de registro */
+.event-registration-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Ventana del modal de registro - estilo oscuro como single-evento */
+.event-registration-modal {
+  background: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+  padding: 0;
+  max-width: 450px;
+  width: 100%;
+  position: relative;
+  animation: registrationModalIn 0.3s cubic-bezier(0.4, 2, 0.6, 1) both;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes registrationModalIn {
+  0% {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Botón cerrar modal */
+.event-registration-modal-close {
+  position: absolute !important;
+  top: 15px !important;
+  right: 15px !important;
+  background: transparent !important;
+  border: none !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  cursor: pointer !important;
+  padding: 5px !important;
+  z-index: 2 !important;
+  transition:
+    color 0.2s,
+    transform 0.2s !important;
+}
+
+.event-registration-modal-close:hover {
+  color: var(--event-danger-color);
+  transform: scale(1.1);
+}
+
+.event-registration-modal-close .dashicons {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+/* Header del modal */
+.event-registration-modal-header {
+  padding: 25px 25px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.event-registration-modal-title {
+  font-family: var(--event-font-heading);
+  font-size: 22px;
+  color: #fff;
+  margin: 0 0 8px;
+  letter-spacing: 0.15em;
+  font-weight: 500;
+}
+
+.event-registration-modal-event {
+  font-size: 14px;
+  color: var(--event-primary-color);
+  margin: 0;
+}
+
+/* Body del modal */
+.event-registration-modal-body {
+  padding: 25px;
+}
+
+/* Estilos del formulario dentro del modal de registro */
+.event-registration-modal .event-registration-form-wrapper {
+  margin: 0;
+}
+
+.event-registration-modal .form-group {
+  margin-bottom: 18px;
+}
+
+.event-registration-modal .form-group label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.event-registration-modal .form-control {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #fff;
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 15px;
+  width: 100%;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.event-registration-modal .form-control:focus {
+  outline: none;
+  border-color: var(--event-primary-color);
+  box-shadow: 0 0 0 3px rgba(236, 98, 183, 0.2);
+}
+
+.event-registration-modal .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.event-registration-modal .form-checkbox label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: normal;
+}
+
+.event-registration-modal .form-checkbox input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: var(--event-primary-color);
+}
+
+.event-registration-modal .event-register-btn {
+  background: var(--event-primary-color);
+  color: #fff;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
+  margin-top: 10px;
+}
+
+.event-registration-modal .event-register-btn:hover {
+  background: var(--event-secondary-color);
+  transform: translateY(-1px);
+}
+
+.event-registration-modal .event-register-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.event-registration-modal .form-messages {
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.event-registration-modal .form-messages.success {
+  background: rgba(1, 207, 145, 0.15);
+  color: var(--event-success-color);
+  border: 1px solid rgba(1, 207, 145, 0.3);
+}
+
+.event-registration-modal .form-messages.error {
+  background: rgba(202, 22, 49, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(202, 22, 49, 0.3);
+}
+
+/* Responsive del modal de registro */
+@media (max-width: 500px) {
+  .event-registration-modal {
+    max-width: 100%;
+    margin: 10px;
+    border-radius: 10px;
+  }
+
+  .event-registration-modal-header {
+    padding: 20px 20px 12px;
+  }
+
+  .event-registration-modal-body {
+    padding: 20px;
+  }
+
+  .event-registration-modal-title {
+    font-size: 18px;
+  }
+
+  .event-registration-trigger-btn {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+/* Estados de mensaje para el shortcode */
+.event-registration-disabled,
+.event-registration-closed,
+.event-registration-full {
+  padding: 15px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.event-registration-disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.event-registration-closed {
+  background: rgba(254, 230, 0, 0.1);
+  color: var(--event-warning-color);
+}
+
+.event-registration-full {
+  background: rgba(202, 22, 49, 0.1);
+  color: var(--event-danger-color);
+}
+
 /**
  * Estilos públicos del plugin Event Show
  *
@@ -86,7 +370,8 @@
 /* Tipografía Chunk para títulos */
 @font-face {
   font-family: "Chunk";
-  src: url("../fonts/chunk.otf") format("opentype"),
+  src:
+    url("../fonts/chunk.otf") format("opentype"),
     url("../fonts/chunk.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
@@ -533,7 +818,9 @@ h6,
   font-family: "Montserrat", sans-serif;
   font-weight: 600;
   min-width: 40px;
-  transition: color 0.2s, transform 0.2s;
+  transition:
+    color 0.2s,
+    transform 0.2s;
 }
 .clock-timer.clock-updating {
   color: #1fc69d;
@@ -1292,7 +1579,9 @@ h6,
   padding: 20px;
   border-radius: var(--event-border-radius);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .dashboard-card:hover {
@@ -1751,6 +2040,32 @@ h6,
   .slider-btn {
     margin-bottom: 10px;
   }
+}
+
+/* === Forzar estilos del botón de registro del shortcode === */
+.event-registration-shortcode .event-registration-trigger-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: var(--event-primary-color) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  font-family: var(--event-font-body, inherit) !important;
+  cursor: pointer !important;
+  transition: var(--event-transition, all 0.3s ease) !important;
+  box-shadow: 0 4px 15px rgba(236, 98, 183, 0.3) !important;
+}
+
+.event-registration-shortcode .event-registration-trigger-btn:hover {
+  background: var(--event-secondary-color) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 86, 185, 0.3) !important;
 }
 
 /* ===========================

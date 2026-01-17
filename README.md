@@ -161,12 +161,15 @@ Parámetros:
 #### Formulario de registro
 
 ```
-[event_show_registration event_id="123"]
+[event_show_registration event_id="123" button_text="Registrarse"]
 ```
+
+Muestra un botón que al hacer clic abre un modal con el formulario de registro de asistentes.
 
 Parámetros:
 
-- `event_id`: ID del evento
+- `event_id`: ID del evento (por defecto usa el ID del post actual)
+- `button_text`: Texto del botón (por defecto: "Registrarse")
 
 #### Formulario de envío
 

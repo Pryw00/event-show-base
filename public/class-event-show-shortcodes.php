@@ -264,15 +264,17 @@ class Event_Show_Shortcodes
     /**
      * Shortcode para formulario de registro
      *
-     * [event_show_registration event_id="123"]
+     * [event_show_registration event_id="123" button_text="Registrarse"]
      */
     public function registration_form_shortcode($atts)
     {
         $atts = Event_Show_Helpers::sanitize_shortcode_atts($atts, array(
             'event_id' => get_the_ID(),
+            'button_text' => __('Registrarse', 'event-show-base'),
         ));
 
         $event_id = $atts['event_id'];
+        $button_text = $atts['button_text'];
 
         if (! $event_id || 'evento' !== get_post_type($event_id)) {
             return '<p>' . esc_html__('Evento no válido', 'event-show-base') . '</p>';
@@ -281,18 +283,18 @@ class Event_Show_Shortcodes
         // Verificar si el registro está habilitado
         $enable_registration = get_post_meta($event_id, '_enable_registration', true);
         if ('0' === $enable_registration) {
-            return '<p>' . esc_html__('El registro para este evento está deshabilitado', 'event-show-base') . '</p>';
+            return '<p class="event-registration-disabled">' . esc_html__('El registro para este evento está deshabilitado', 'event-show-base') . '</p>';
         }
 
         // Verificar si el evento ya pasó
         if (Event_Show_Helpers::is_past_event($event_id)) {
-            return '<p>' . esc_html__('Este evento ya ha finalizado', 'event-show-base') . '</p>';
+            return '<p class="event-registration-closed">' . esc_html__('Este evento ya ha finalizado', 'event-show-base') . '</p>';
         }
 
         // Verificar fecha límite
         $deadline = get_post_meta($event_id, '_registration_deadline', true);
         if ($deadline && strtotime(str_replace('/', '-', $deadline)) < time()) {
-            return '<p>' . esc_html__('El plazo de registro para este evento ha finalizado', 'event-show-base') . '</p>';
+            return '<p class="event-registration-closed">' . esc_html__('El plazo de registro para este evento ha finalizado', 'event-show-base') . '</p>';
         }
 
         // Verificar aforo
@@ -300,12 +302,41 @@ class Event_Show_Shortcodes
         if ($max_attendees) {
             $current_attendees = Event_Show_Attendees::get_total_attendees($event_id);
             if ($current_attendees >= $max_attendees) {
-                return '<p>' . esc_html__('Este evento ha alcanzado su capacidad máxima', 'event-show-base') . '</p>';
+                return '<p class="event-registration-full">' . esc_html__('Este evento ha alcanzado su capacidad máxima', 'event-show-base') . '</p>';
             }
         }
 
+        // Generar ID único para el modal
+        $modal_id = 'registration-modal-' . $event_id;
+        $event_title = get_the_title($event_id);
+
         ob_start();
-        include EVENT_SHOW_PLUGIN_DIR . 'templates/registration-form.php';
+?>
+        <div class="event-registration-shortcode">
+            <button type="button" class="event-registration-trigger-btn" data-modal-id="<?php echo esc_attr($modal_id); ?>">
+                <span class="btn-icon dashicons dashicons-groups"></span>
+                <span class="btn-text"><?php echo esc_html($button_text); ?></span>
+            </button>
+
+            <!-- Modal de registro -->
+            <div id="<?php echo esc_attr($modal_id); ?>" class="event-registration-modal-overlay" style="display: none;">
+                <div class="event-registration-modal">
+                    <button type="button" class="event-registration-modal-close" aria-label="<?php esc_attr_e('Cerrar', 'event-show-base'); ?>">
+                        <span class="dashicons dashicons-no-alt"></span>
+                    </button>
+                    <div class="event-registration-modal-header">
+                        <h3 class="event-registration-modal-title"><?php esc_html_e('Registro', 'event-show-base'); ?></h3>
+                        <p class="event-registration-modal-event"><?php echo esc_html($event_title); ?></p>
+                    </div>
+                    <div class="event-registration-modal-body">
+                        <?php
+                        include EVENT_SHOW_PLUGIN_DIR . 'templates/registration-form.php';
+                        ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+<?php
         return ob_get_clean();
     }
 
