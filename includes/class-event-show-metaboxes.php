@@ -279,41 +279,64 @@ class Event_Show_Metaboxes
             return;
         }
 
+
+        // --- Notificación de asistentes por cambio de datos clave ---
+        $old_data = array(
+            'post_title' => get_post_field('post_title', $post_id),
+            '_event_date' => get_post_meta($post_id, '_event_date', true),
+            '_event_time' => get_post_meta($post_id, '_event_time', true),
+            '_event_end_date' => get_post_meta($post_id, '_event_end_date', true),
+            '_event_end_time' => get_post_meta($post_id, '_event_end_time', true),
+            'lugar' => join(',', wp_get_post_terms($post_id, 'lugar', ['fields' => 'ids'])),
+            'categoria_evento' => join(',', wp_get_post_terms($post_id, 'categoria_evento', ['fields' => 'ids'])),
+            'clasificacion_edad' => join(',', wp_get_post_terms($post_id, 'clasificacion_edad', ['fields' => 'ids'])),
+        );
+
         // Guardar fecha y hora
         if (isset($_POST['event_date'])) {
             update_post_meta($post_id, '_event_date', sanitize_text_field($_POST['event_date']));
         }
-
         if (isset($_POST['event_time'])) {
             update_post_meta($post_id, '_event_time', sanitize_text_field($_POST['event_time']));
         }
-
         if (isset($_POST['event_end_date'])) {
             update_post_meta($post_id, '_event_end_date', sanitize_text_field($_POST['event_end_date']));
         }
-
         if (isset($_POST['event_end_time'])) {
             update_post_meta($post_id, '_event_end_time', sanitize_text_field($_POST['event_end_time']));
         }
-
         // Guardar miniatura
         if (isset($_POST['event_thumbnail'])) {
             update_post_meta($post_id, '_event_thumbnail', absint($_POST['event_thumbnail']));
         }
-
         // Guardar opciones
         $use_default_template = isset($_POST['use_default_template']) ? '1' : '0';
         update_post_meta($post_id, '_use_default_template', $use_default_template);
-
         $enable_registration = isset($_POST['enable_registration']) ? '1' : '0';
         update_post_meta($post_id, '_enable_registration', $enable_registration);
-
         if (isset($_POST['max_attendees'])) {
             update_post_meta($post_id, '_max_attendees', absint($_POST['max_attendees']));
         }
-
         if (isset($_POST['registration_deadline'])) {
             update_post_meta($post_id, '_registration_deadline', sanitize_text_field($_POST['registration_deadline']));
+        }
+
+        // --- Datos nuevos para comparar ---
+        $new_data = array(
+            'post_title' => isset($_POST['post_title']) ? sanitize_text_field($_POST['post_title']) : get_post_field('post_title', $post_id),
+            '_event_date' => isset($_POST['event_date']) ? sanitize_text_field($_POST['event_date']) : get_post_meta($post_id, '_event_date', true),
+            '_event_time' => isset($_POST['event_time']) ? sanitize_text_field($_POST['event_time']) : get_post_meta($post_id, '_event_time', true),
+            '_event_end_date' => isset($_POST['event_end_date']) ? sanitize_text_field($_POST['event_end_date']) : get_post_meta($post_id, '_event_end_date', true),
+            '_event_end_time' => isset($_POST['event_end_time']) ? sanitize_text_field($_POST['event_end_time']) : get_post_meta($post_id, '_event_end_time', true),
+            'lugar' => isset($_POST['tax_input']['lugar']) ? join(',', (array)$_POST['tax_input']['lugar']) : join(',', wp_get_post_terms($post_id, 'lugar', ['fields' => 'ids'])),
+            'categoria_evento' => isset($_POST['tax_input']['categoria_evento']) ? join(',', (array)$_POST['tax_input']['categoria_evento']) : join(',', wp_get_post_terms($post_id, 'categoria_evento', ['fields' => 'ids'])),
+            'clasificacion_edad' => isset($_POST['tax_input']['clasificacion_edad']) ? join(',', (array)$_POST['tax_input']['clasificacion_edad']) : join(',', wp_get_post_terms($post_id, 'clasificacion_edad', ['fields' => 'ids'])),
+        );
+        // Notificar si hay cambios clave
+        if ($post->post_status === 'publish') {
+            if (class_exists('Event_Show_Notifications')) {
+                Event_Show_Notifications::maybe_notify_event_update($post_id, $old_data, $new_data);
+            }
         }
 
         // Validar que el evento sea al menos 5 días en el futuro

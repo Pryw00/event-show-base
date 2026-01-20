@@ -130,6 +130,13 @@ class Event_Show_Admin
      */
     public function register_settings()
     {
+        // Remitente personalizado
+        register_setting('event_show_settings', 'event_show_email_from_name');
+        register_setting('event_show_settings', 'event_show_email_from_address');
+        // Plantillas de email
+        register_setting('event_show_settings', 'event_show_email_template_registration');
+        register_setting('event_show_settings', 'event_show_email_template_reminder');
+        register_setting('event_show_settings', 'event_show_email_template_update');
         register_setting('event_show_settings', 'event_show_email_notifications_enabled');
         register_setting('event_show_settings', 'event_show_admin_email');
         register_setting('event_show_settings', 'event_show_min_days_advance');
@@ -145,6 +152,18 @@ class Event_Show_Admin
      */
     public function render_settings_page()
     {
+        // Etiquetas disponibles
+        $tags = [
+            '{{Titulo evento}}' => 'Título del evento',
+            '{{Fecha}}' => 'Fecha del evento',
+            '{{Hora}}' => 'Hora del evento',
+            '{{Nombre usuario}}' => 'Nombre del usuario',
+            '{{Email usuario}}' => 'Email del usuario',
+            '{{Enlace evento}}' => 'URL del evento',
+            '{{Organizador}}' => 'Organizador',
+            '{{Lugar}}' => 'Lugar',
+        ];
+
     ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
@@ -154,6 +173,48 @@ class Event_Show_Admin
                 do_settings_sections('event_show_settings');
                 ?>
                 <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="event_show_email_from_name">Nombre del remitente</label></th>
+                        <td>
+                            <input type="text" id="event_show_email_from_name" name="event_show_email_from_name" value="<?php echo esc_attr(get_option('event_show_email_from_name', 'Event Show')); ?>" class="regular-text">
+                            <p class="description">Nombre que aparecerá como remitente en los emails.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="event_show_email_from_address">Correo del remitente</label></th>
+                        <td>
+                            <input type="email" id="event_show_email_from_address" name="event_show_email_from_address" value="<?php echo esc_attr(get_option('event_show_email_from_address', get_option('admin_email'))); ?>" class="regular-text">
+                            <p class="description">Dirección de correo que aparecerá como remitente.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Etiquetas disponibles</th>
+                        <td>
+                            <?php foreach ($tags as $tag => $desc): ?>
+                                <span style="display:inline-block;background:#f3f3f3;border-radius:3px;padding:2px 7px;margin:2px;font-family:monospace;"> <?php echo esc_html($tag); ?> </span> = <?php echo esc_html($desc); ?><br>
+                            <?php endforeach; ?>
+                        </td>
+                    </tr>
+                    <?php
+                    $plantillas = [
+                        'registration' => 'Confirmación de registro',
+                        'reminder' => 'Recordatorio de evento',
+                        'update' => 'Notificación de modificación',
+                    ];
+                    foreach ($plantillas as $key => $label):
+                        $option = 'event_show_email_template_' . $key;
+                        $value = get_option($option, '<p>Hola {{Nombre usuario}},<br>Gracias por tu interés en <b>{{Titulo evento}}</b>.<br>Fecha: {{Fecha}}<br>Hora: {{Hora}}<br>Más info: {{Enlace evento}}</p>');
+                    ?>
+                        <tr>
+                            <th scope="row">
+                                <?php echo esc_html($label); ?><br>
+                                <button type="button" class="button button-secondary preview-email-template" data-template-id="<?php echo esc_attr($key); ?>">Vista previa</button>
+                            </th>
+                            <td>
+                                <textarea name="<?php echo esc_attr($option); ?>" id="<?php echo esc_attr($option); ?>" rows="7" style="width:100%;font-family:monospace;"><?php echo esc_textarea($value); ?></textarea>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
                     <tr>
                         <th scope="row">
                             <label for="event_show_email_notifications_enabled">
@@ -247,6 +308,58 @@ class Event_Show_Admin
                 <?php submit_button(); ?>
             </form>
         </div>
+        <!-- Modal de vista previa de email -->
+        <div id="event-show-email-preview-modal" style="display:none;position:fixed;z-index:99999;left:0;top:0;width:100vw;height:100vh;background:rgba(30,40,60,0.45);align-items:center;justify-content:center;">
+            <div style="background:#fff;max-width:600px;width:90vw;padding:32px 24px 24px 24px;border-radius:10px;box-shadow:0 8px 40px rgba(44,62,80,0.18);position:relative;">
+                <button id="close-email-preview-modal" style="position:absolute;top:12px;right:12px;font-size:22px;background:none;border:none;cursor:pointer;">&times;</button>
+                <h2 style="margin-top:0;font-size:1.3em;">Vista previa de email</h2>
+                <div id="event-show-email-preview-content" style="border:1px solid #e3e3e3;padding:18px 16px;border-radius:6px;min-height:120px;max-height:60vh;overflow:auto;font-family:sans-serif;background:#fafbfc;"></div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                        function getExampleData() {
+                            return {
+                                '{{Titulo evento}}': 'Concierto de Rock',
+                                '{{Fecha}}': '25/01/2026',
+                                '{{Hora}}': '20:00',
+                                '{{Nombre usuario}}': 'Juan Pérez',
+                                '{{Email usuario}}': 'juan.perez@email.com',
+                                '{{Enlace evento}}': 'https://tusitio.com/evento/concierto-rock',
+                                '{{Organizador}}': 'Producciones XYZ',
+                                '{{Lugar}}': 'Teatro Principal',
+                            };
+                        }
+
+                        function renderPreview(template) {
+                            let data = getExampleData();
+                            let html = template;
+                            Object.keys(data).forEach(function(tag) {
+                                    let re = new RegExp(tag.replace(/[{}]/g, m => '\' + m), '
+                                        g ');
+                                        html = html.replace(re, data[tag]);
+                                    });
+                                    return html;
+                                }
+                                document.querySelectorAll('.preview-email-template').forEach(function(btn) {
+                                    btn.addEventListener('click', function() {
+                                        let id = btn.getAttribute('data-template-id');
+                                        let textarea = document.getElementById('event_show_email_template_' + id);
+                                        let html = renderPreview(textarea.value);
+                                        document.getElementById('event-show-email-preview-content').innerHTML = html;
+                                        document.getElementById('event-show-email-preview-modal').style.display = 'flex';
+                                    });
+                                }); document.getElementById('close-email-preview-modal').addEventListener('click', function() {
+                                    document.getElementById('event-show-email-preview-modal').style.display = 'none';
+                                });
+                                // Cerrar modal con Escape
+                                document.addEventListener('keydown', function(e) {
+                                    if (e.key === 'Escape') {
+                                        document.getElementById('event-show-email-preview-modal').style.display = 'none';
+                                    }
+                                });
+                            });
+        </script>
     <?php
     }
 

@@ -25,6 +25,36 @@ class Event_Show_Public
         add_filter('the_content', array($this, 'filter_content'));
         add_action('wp_head', array($this, 'add_structured_data'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_media_uploader'));
+        add_action('wp_head', array($this, 'fix_woodmart_single_event_layout'), 99);
+    }
+
+    /**
+     * Corregir layout restringido de Woodmart en single de evento
+     */
+    public function fix_woodmart_single_event_layout()
+    {
+        if (!is_singular('evento')) {
+            return;
+        }
+?>
+        <style id="event-show-woodmart-fix">
+            /* Anular variables de columna de Woodmart solo en el contenedor principal */
+            body.single-evento #main-content.wd-content-layout,
+            body.single-evento main.wd-content-layout {
+                --wd-col-lg: unset !important;
+                --wd-gap-lg: unset !important;
+                --wd-gap-sm: unset !important;
+            }
+
+            /* Asegurar que el contenido ocupe el ancho completo */
+            body.single-evento #main-content>.site-content,
+            body.single-evento #main-content>article,
+            body.single-evento #main-content>.hentry {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+        </style>
+<?php
     }
 
     /**
@@ -34,6 +64,11 @@ class Event_Show_Public
     {
         if (is_user_logged_in()) {
             wp_enqueue_media();
+        }
+
+        // Cargar Dashicons en el frontend para single-evento
+        if (is_singular('evento')) {
+            wp_enqueue_style('dashicons');
         }
     }
 

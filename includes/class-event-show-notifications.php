@@ -16,6 +16,88 @@ if (! defined('ABSPATH')) {
  */
 class Event_Show_Notifications
 {
+    /**
+     * Notificar a asistentes si se modifican datos clave del evento
+     */
+    public static function maybe_notify_event_update($event_id, $old_data, $new_data)
+    {
+        // Detectar cambios clave
+        $changed = false;
+        $campos = ['post_title', '_event_date', '_event_time', '_event_end_date', '_event_end_time'];
+        foreach ($campos as $campo) {
+            if ((isset($old_data[$campo]) ? $old_data[$campo] : '') !== (isset($new_data[$campo]) ? $new_data[$campo] : '')) {
+                $changed = true;
+            }
+        }
+        // Lugar
+        $old_lugar = isset($old_data['lugar']) ? $old_data['lugar'] : '';
+        $new_lugar = isset($new_data['lugar']) ? $new_data['lugar'] : '';
+        if ($old_lugar !== $new_lugar) $changed = true;
+        // Categoría
+        $old_cat = isset($old_data['categoria_evento']) ? $old_data['categoria_evento'] : '';
+        $new_cat = isset($new_data['categoria_evento']) ? $new_data['categoria_evento'] : '';
+        if ($old_cat !== $new_cat) $changed = true;
+        // Clasificación de edad
+        $old_clas = isset($old_data['clasificacion_edad']) ? $old_data['clasificacion_edad'] : '';
+        $new_clas = isset($new_data['clasificacion_edad']) ? $new_data['clasificacion_edad'] : '';
+        if ($old_clas !== $new_clas) $changed = true;
+        if (! $changed) return;
+        self::send_event_update_notification($event_id);
+    }
+
+    /**
+     * Enviar email a asistentes sobre actualización de evento
+     */
+    public static function send_event_update_notification($event_id)
+    {
+        if (! get_option('event_show_email_notifications_enabled', true)) return;
+        $attendees = Event_Show_Attendees::get_attendees($event_id);
+        if (empty($attendees)) return;
+        $event = get_post($event_id);
+        $event_date = get_post_meta($event_id, '_event_date', true);
+        $event_time = get_post_meta($event_id, '_event_time', true);
+        $event_link = get_permalink($event_id);
+        $lugares = wp_get_post_terms($event_id, 'lugar');
+        $lugar_nombre = ! empty($lugares) ? $lugares[0]->name : '';
+        $categorias = wp_get_post_terms($event_id, 'categoria_evento');
+        $categoria_nombre = ! empty($categorias) ? $categorias[0]->name : '';
+        $clasificaciones = wp_get_post_terms($event_id, 'clasificacion_edad');
+        $clasificacion_nombre = ! empty($clasificaciones) ? $clasificaciones[0]->name : '';
+        $subject = sprintf(__('Actualización importante en el evento: %s', 'event-show-base'), $event->post_title);
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $template = get_option('event_show_email_template_update');
+        foreach ($attendees as $attendee) {
+            $vars = array(
+                '{{Titulo evento}}' => $event->post_title,
+                '{{Fecha}}' => $event_date,
+                '{{Hora}}' => $event_time,
+                '{{Nombre usuario}}' => $attendee['name'],
+                '{{Email usuario}}' => $attendee['email'],
+                '{{Enlace evento}}' => $event_link,
+                '{{Organizador}}' => '',
+                '{{Lugar}}' => $lugar_nombre,
+                '{{Categoría}}' => $categoria_nombre,
+                '{{Clasificación de edad}}' => $clasificacion_nombre,
+            );
+            $message = $template;
+            foreach ($vars as $k => $v) {
+                $message = str_replace($k, $v, $message);
+            }
+            // Remitente personalizado
+            $from_name = get_option('event_show_email_from_name', 'Event Show');
+            $from_email = get_option('event_show_email_from_address', get_option('admin_email'));
+            add_filter('wp_mail_from', function () use ($from_email) {
+                return $from_email;
+            });
+            add_filter('wp_mail_from_name', function () use ($from_name) {
+                return $from_name;
+            });
+            wp_mail($attendee['email'], $subject, $message, $headers);
+            remove_all_filters('wp_mail_from');
+            remove_all_filters('wp_mail_from_name');
+        }
+    }
+
 
     /**
      * Enviar confirmación al asistente
@@ -49,24 +131,34 @@ class Event_Show_Notifications
         $lugares = wp_get_post_terms($event_id, 'lugar');
         $lugar_nombre = ! empty($lugares) ? $lugares[0]->name : '';
 
-        $subject = sprintf(
-            __('¡Confirmación de registro para %s!', 'event-show-base'),
-            $event->post_title
-        );
-
-        $message = self::get_email_template('attendee_confirmation', array(
-            'attendee_name' => $attendee['name'],
-            'event_title' => $event->post_title,
-            'event_date' => $event_date,
-            'event_time' => $event_time,
-            'event_location' => $lugar_nombre,
-            'num_attendees' => $attendee['num_attendees'],
-            'event_link' => $event_link,
-        ));
-
+        $subject = sprintf(__('¡Confirmación de registro para %s!', 'event-show-base'), $event->post_title);
         $headers = array('Content-Type: text/html; charset=UTF-8');
-
+        $template = get_option('event_show_email_template_registration');
+        $vars = array(
+            '{{Titulo evento}}' => $event->post_title,
+            '{{Fecha}}' => $event_date,
+            '{{Hora}}' => $event_time,
+            '{{Nombre usuario}}' => $attendee['name'],
+            '{{Email usuario}}' => $attendee['email'],
+            '{{Enlace evento}}' => $event_link,
+            '{{Organizador}}' => '',
+            '{{Lugar}}' => $lugar_nombre,
+        );
+        $message = $template;
+        foreach ($vars as $k => $v) {
+            $message = str_replace($k, $v, $message);
+        }
+        $from_name = get_option('event_show_email_from_name', 'Event Show');
+        $from_email = get_option('event_show_email_from_address', get_option('admin_email'));
+        add_filter('wp_mail_from', function () use ($from_email) {
+            return $from_email;
+        });
+        add_filter('wp_mail_from_name', function () use ($from_name) {
+            return $from_name;
+        });
         wp_mail($attendee['email'], $subject, $message, $headers);
+        remove_all_filters('wp_mail_from');
+        remove_all_filters('wp_mail_from_name');
     }
 
     /**
@@ -140,24 +232,35 @@ class Event_Show_Notifications
         $lugares = wp_get_post_terms($event_id, 'lugar');
         $lugar_nombre = ! empty($lugares) ? $lugares[0]->name : '';
 
-        $subject = sprintf(
-            __('Recordatorio: %s es mañana', 'event-show-base'),
-            $event->post_title
-        );
-
+        $subject = sprintf(__('Recordatorio: %s es mañana', 'event-show-base'), $event->post_title);
         $headers = array('Content-Type: text/html; charset=UTF-8');
-
+        $template = get_option('event_show_email_template_reminder');
         foreach ($attendees as $attendee) {
-            $message = self::get_email_template('event_reminder', array(
-                'attendee_name' => $attendee['name'],
-                'event_title' => $event->post_title,
-                'event_date' => $event_date,
-                'event_time' => $event_time,
-                'event_location' => $lugar_nombre,
-                'event_link' => $event_link,
-            ));
-
+            $vars = array(
+                '{{Titulo evento}}' => $event->post_title,
+                '{{Fecha}}' => $event_date,
+                '{{Hora}}' => $event_time,
+                '{{Nombre usuario}}' => $attendee['name'],
+                '{{Email usuario}}' => $attendee['email'],
+                '{{Enlace evento}}' => $event_link,
+                '{{Organizador}}' => '',
+                '{{Lugar}}' => $lugar_nombre,
+            );
+            $message = $template;
+            foreach ($vars as $k => $v) {
+                $message = str_replace($k, $v, $message);
+            }
+            $from_name = get_option('event_show_email_from_name', 'Event Show');
+            $from_email = get_option('event_show_email_from_address', get_option('admin_email'));
+            add_filter('wp_mail_from', function () use ($from_email) {
+                return $from_email;
+            });
+            add_filter('wp_mail_from_name', function () use ($from_name) {
+                return $from_name;
+            });
             wp_mail($attendee['email'], $subject, $message, $headers);
+            remove_all_filters('wp_mail_from');
+            remove_all_filters('wp_mail_from_name');
         }
     }
 
