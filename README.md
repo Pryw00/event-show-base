@@ -97,27 +97,31 @@ Event Show es un plugin completo para WordPress que permite crear, gestionar y p
 #### Vista Grid
 
 ```
-[event_show_grid category="" limit="12" columns="3" show="upcoming"]
+[event_show_grid category="" limit="12" columns="3" show="upcoming" pagination_type="default" per_page="12"]
 ```
 
 Parámetros:
 
 - `category`: ID de categoría para filtrar
-- `limit`: Número de eventos a mostrar
+- `limit`: Número de eventos a mostrar (usar `-1` para todos los eventos)
 - `columns`: Número de columnas (2, 3 o 4)
 - `show`: "upcoming" (próximos, default), "past" (pasados), "all" (todos)
+- `pagination_type`: Tipo de paginación - "default" (números), "infinite" (scroll infinito), "load_more" (botón cargar más)
+- `per_page`: Eventos por página (solo con paginación activa)
 
 #### Vista Lista
 
 ```
-[event_show_list category="" limit="10" show="upcoming"]
+[event_show_list category="" limit="10" show="upcoming" pagination_type="default" per_page="10"]
 ```
 
 Parámetros:
 
 - `category`: ID de categoría para filtrar
-- `limit`: Número de eventos a mostrar
+- `limit`: Número de eventos a mostrar (usar `-1` para todos los eventos)
 - `show`: "upcoming" (próximos, default), "past" (pasados), "all" (todos)
+- `pagination_type`: Tipo de paginación - "default" (números), "infinite" (scroll infinito), "load_more" (botón cargar más)
+- `per_page`: Eventos por página (solo con paginación activa)
 
 #### Vista Calendario
 

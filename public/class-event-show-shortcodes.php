@@ -45,6 +45,8 @@ class Event_Show_Shortcodes
             'age_rating' => '',
             'limit' => get_option('event_show_events_per_page', 12),
             'show' => 'upcoming', // upcoming|past|all
+            'pagination_type' => 'default', // default|infinite|load_more
+            'per_page' => get_option('event_show_events_per_page', 12),
         ));
 
         return $this->render_events($atts);
@@ -63,6 +65,9 @@ class Event_Show_Shortcodes
             'age_rating' => '',
             'limit' => get_option('event_show_events_per_page', 12),
             'show' => 'upcoming',
+            'columns' => 3, // 2, 3 o 4 columnas
+            'pagination_type' => 'default', // default|infinite|load_more
+            'per_page' => get_option('event_show_events_per_page', 12),
         ));
 
         return $this->render_events($atts);
@@ -130,6 +135,10 @@ class Event_Show_Shortcodes
      */
     private function render_events($atts)
     {
+        // Paginación
+        $paged = (get_query_var('paged')) ? get_query_var('paged') : 1;
+        $has_pagination = in_array($atts['layout'], ['grid', 'list']) && !empty($atts['pagination_type']);
+
         // Obtener TODOS los eventos publicados primero, luego filtrar manualmente
         $args = array(
             'post_type' => 'evento',
@@ -226,9 +235,24 @@ class Event_Show_Shortcodes
                 }
             }
 
-            // Aplicar límite
-            if ($atts['limit'] > 0) {
-                $filtered_ids = array_slice($filtered_ids, 0, $atts['limit']);
+            // Aplicar límite (limit=-1 significa sin límite)
+            $limit = intval($atts['limit']);
+            if ($limit > 0) {
+                $filtered_ids = array_slice($filtered_ids, 0, $limit);
+            }
+        }
+
+        // Total de eventos antes de paginación
+        $total_events = count($filtered_ids);
+        $max_pages = 1;
+
+        // Aplicar paginación si corresponde
+        if ($has_pagination && !empty($filtered_ids)) {
+            $per_page = intval($atts['per_page']);
+            if ($per_page > 0) {
+                $max_pages = ceil($total_events / $per_page);
+                $offset = ($paged - 1) * $per_page;
+                $filtered_ids = array_slice($filtered_ids, $offset, $per_page);
             }
         }
 
@@ -249,6 +273,17 @@ class Event_Show_Shortcodes
 
         $template = 'templates/layouts/' . $atts['layout'] . '.php';
         $template_path = EVENT_SHOW_PLUGIN_DIR . $template;
+
+        // Pasar variables de paginación a los templates
+        $pagination_data = array(
+            'has_pagination' => $has_pagination,
+            'pagination_type' => isset($atts['pagination_type']) ? $atts['pagination_type'] : 'default',
+            'paged' => $paged,
+            'max_pages' => $max_pages,
+            'total_events' => $total_events,
+            'per_page' => isset($atts['per_page']) ? intval($atts['per_page']) : 12,
+            'atts' => $atts,
+        );
 
         if (file_exists($template_path)) {
             include $template_path;

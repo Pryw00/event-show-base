@@ -120,6 +120,10 @@ class Event_Show_Ajax
         // Descargar iCal
         add_action('wp_ajax_event_show_download_ical', array($this, 'download_ical'));
         add_action('wp_ajax_nopriv_event_show_download_ical', array($this, 'download_ical'));
+
+        // Paginación AJAX
+        add_action('wp_ajax_event_show_load_more', array($this, 'load_more_events'));
+        add_action('wp_ajax_nopriv_event_show_load_more', array($this, 'load_more_events'));
     }
 
     /**
@@ -681,5 +685,66 @@ class Event_Show_Ajax
             'attendees' => $attendees,
             'total' => count($attendees),
         ));
+    }
+
+    /**
+     * AJAX: Cargar más eventos (paginación)
+     */
+    public function load_more_events()
+    {
+        check_ajax_referer('event_show_nonce', 'nonce');
+
+        $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
+        $layout = isset($_POST['layout']) ? sanitize_text_field($_POST['layout']) : 'grid';
+        $atts = isset($_POST['atts']) ? $_POST['atts'] : array();
+
+        // Si atts viene como string JSON, decodificar
+        if (is_string($atts)) {
+            $atts = json_decode(stripslashes($atts), true);
+        }
+
+        // Asegurarse de que atts es un array
+        if (!is_array($atts)) {
+            $atts = array();
+        }
+
+        // Sanitizar atts
+        $atts['layout'] = $layout;
+
+        // Simular paginación
+        set_query_var('paged', $page);
+
+        // Usar Event_Show_Shortcodes para renderizar
+        $shortcodes = new Event_Show_Shortcodes();
+        $reflection = new ReflectionClass($shortcodes);
+        $method = $reflection->getMethod('render_events');
+        $method->setAccessible(true);
+
+        ob_start();
+        $method->invoke($shortcodes, $atts);
+        $full_html = ob_get_clean();
+
+        // Extraer solo el contenido de eventos (sin wrapper ni paginación)
+        $dom = new DOMDocument();
+        @$dom->loadHTML('<?xml encoding="UTF-8">' . $full_html);
+
+        $container_class = ($layout === 'grid') ? 'events-grid-container' : 'events-list-container';
+        $xpath = new DOMXPath($dom);
+        $container = $xpath->query("//*[contains(@class, '{$container_class}')]")->item(0);
+
+        if ($container) {
+            $html = '';
+            foreach ($container->childNodes as $child) {
+                $html .= $dom->saveHTML($child);
+            }
+
+            wp_send_json_success(array(
+                'html' => $html,
+            ));
+        } else {
+            wp_send_json_error(array(
+                'message' => __('No se pudieron cargar más eventos', 'event-show-base'),
+            ));
+        }
     }
 }

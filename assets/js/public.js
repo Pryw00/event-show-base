@@ -102,6 +102,9 @@
     // Modales
     initModals();
 
+    // Paginación para Grid y List
+    initEventPagination();
+
     // Modal editar evento
     $(document).on("click", ".edit-event-link", function (e) {
       e.preventDefault();
@@ -1049,4 +1052,152 @@
       eventShowData.nonce;
     window.location.href = url;
   });
+
+  /**
+   * Paginación para layouts Grid y List
+   */
+  function initEventPagination() {
+    // Load More button
+    $(document).on("click", ".event-load-more-btn", function (e) {
+      e.preventDefault();
+      var $btn = $(this);
+      var $container = $btn.closest(".event-show-grid, .event-show-list");
+      var nextPage = parseInt($btn.data("next-page"));
+      var atts = $container.data("atts");
+
+      // Asegurarse de que atts sea un objeto
+      if (typeof atts === "string") {
+        try {
+          atts = JSON.parse(atts);
+        } catch (e) {
+          atts = {};
+        }
+      }
+
+      loadMoreEvents(
+        $container,
+        nextPage,
+        atts,
+        function (html) {
+          var $eventsContainer = $container.find(
+            ".events-grid-container, .events-list-container",
+          );
+          $eventsContainer.append(html);
+
+          var maxPages = parseInt($container.data("max-pages"));
+          if (nextPage >= maxPages) {
+            $btn.parent().remove();
+          } else {
+            $btn.data("next-page", nextPage + 1);
+            $container.attr("data-paged", nextPage);
+          }
+        },
+        $btn,
+      );
+    });
+
+    // Infinite scroll
+    $(".event-show-grid, .event-show-list").each(function () {
+      var $container = $(this);
+      var paginationType = $container.data("pagination-type");
+
+      if (paginationType === "infinite") {
+        var isLoading = false;
+        var $trigger = $container.find(".event-show-infinite-trigger");
+        var $loading = $container.find(".event-show-infinite-loading");
+        var atts = $container.data("atts");
+
+        // Asegurarse de que atts sea un objeto
+        if (typeof atts === "string") {
+          try {
+            atts = JSON.parse(atts);
+          } catch (e) {
+            atts = {};
+          }
+        }
+
+        if ($trigger.length) {
+          var observer = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                if (entry.isIntersecting && !isLoading) {
+                  isLoading = true;
+                  $loading.show();
+
+                  var nextPage = parseInt($trigger.data("next-page"));
+
+                  loadMoreEvents($container, nextPage, atts, function (html) {
+                    var $eventsContainer = $container.find(
+                      ".events-grid-container, .events-list-container",
+                    );
+                    $eventsContainer.append(html);
+
+                    var maxPages = parseInt($container.data("max-pages"));
+                    if (nextPage >= maxPages) {
+                      $trigger.remove();
+                      $loading.remove();
+                      observer.disconnect();
+                    } else {
+                      $trigger.data("next-page", nextPage + 1);
+                      $container.attr("data-paged", nextPage);
+                      isLoading = false;
+                      $loading.hide();
+                    }
+                  });
+                }
+              });
+            },
+            { threshold: 0.1 },
+          );
+
+          observer.observe($trigger[0]);
+        }
+      }
+    });
+  }
+
+  /**
+   * Cargar más eventos via AJAX
+   */
+  function loadMoreEvents($container, page, atts, callback, $btn) {
+    var layout = $container.data("layout");
+
+    if ($btn) {
+      $btn.prop("disabled", true);
+      $btn.find(".btn-text").hide();
+      $btn.find(".btn-loading").show();
+    }
+
+    $.ajax({
+      url: eventShowData.ajaxUrl,
+      type: "POST",
+      data: {
+        action: "event_show_load_more",
+        page: page,
+        layout: layout,
+        atts: JSON.stringify(atts),
+        nonce: eventShowData.nonce,
+      },
+      success: function (response) {
+        if (response.success) {
+          callback(response.data.html);
+        }
+
+        if ($btn) {
+          $btn.prop("disabled", false);
+          $btn.find(".btn-text").show();
+          $btn.find(".btn-loading").hide();
+        }
+      },
+      error: function () {
+        alert("Error al cargar más eventos");
+
+        if ($btn) {
+          $btn.prop("disabled", false);
+          $btn.find(".btn-text").show();
+          $btn.find(".btn-loading").hide();
+        }
+      },
+    });
+  }
 })(jQuery);
