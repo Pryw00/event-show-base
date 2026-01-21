@@ -22,6 +22,7 @@ class Event_Show_Admin
      */
     public function __construct()
     {
+        add_action('wp_ajax_event_show_send_test_email', array($this, 'ajax_send_test_email'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_notices', array($this, 'show_admin_notices'));
@@ -48,6 +49,60 @@ class Event_Show_Admin
         add_action('edit_user_profile_update', array($this, 'save_user_organizador_fields'));
     }
 
+    /**
+     * Enviar correo de prueba al administrador con los datos de ejemplo
+     */
+    public function ajax_send_test_email()
+    {
+        check_ajax_referer('event_show_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json(['success' => false, 'error' => 'No autorizado']);
+        }
+        $type = isset($_POST['template_type']) ? sanitize_text_field($_POST['template_type']) : '';
+        $template = isset($_POST['template']) ? wp_kses_post($_POST['template']) : '';
+        $subject = get_option('event_show_email_subject_' . $type, '');
+        if (empty($subject)) {
+            // Asunto por defecto si no está personalizado
+            if ($type === 'registration') {
+                $subject = '¡Confirmación de registro para {{Titulo evento}}!';
+            } elseif ($type === 'reminder') {
+                $subject = 'Recordatorio: {{Titulo evento}}';
+            } elseif ($type === 'update') {
+                $subject = 'Actualización importante en el evento: {{Titulo evento}}';
+            } else {
+                $subject = 'Mensaje de prueba';
+            }
+        }
+        $admin_email = get_option('event_show_admin_email', get_option('admin_email'));
+        $from_name = get_option('event_show_email_from_name', 'Event Show');
+        $from_email = get_option('event_show_email_from_address', get_option('admin_email'));
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        add_filter('wp_mail_from', function () use ($from_email) {
+            return $from_email;
+        });
+        add_filter('wp_mail_from_name', function () use ($from_name) {
+            return $from_name;
+        });
+        $data = [
+            '{{Titulo evento}}' => 'Concierto de Rock',
+            '{{Fecha}}' => '25/01/2026',
+            '{{Hora}}' => '20:00',
+            '{{Nombre usuario}}' => 'Juan Pérez',
+            '{{Email usuario}}' => 'juan.perez@email.com',
+            '{{Enlace evento}}' => 'https://tusitio.com/evento/concierto-rock',
+            '{{Organizador}}' => 'Producciones XYZ',
+            '{{Lugar}}' => 'Teatro Principal',
+        ];
+        foreach ($data as $k => $v) {
+            $template = str_replace($k, $v, $template);
+            $subject = str_replace($k, $v, $subject);
+        }
+        $result = wp_mail($admin_email, $subject, $template, $headers);
+        remove_all_filters('wp_mail_from');
+        remove_all_filters('wp_mail_from_name');
+        wp_send_json(['success' => $result]);
+    }
     /**
      * Mostrar campo de organizadores en el perfil de usuario
      */
@@ -133,10 +188,13 @@ class Event_Show_Admin
         // Remitente personalizado
         register_setting('event_show_settings', 'event_show_email_from_name');
         register_setting('event_show_settings', 'event_show_email_from_address');
-        // Plantillas de email
+        // Plantillas y asuntos de email
         register_setting('event_show_settings', 'event_show_email_template_registration');
+        register_setting('event_show_settings', 'event_show_email_subject_registration');
         register_setting('event_show_settings', 'event_show_email_template_reminder');
+        register_setting('event_show_settings', 'event_show_email_subject_reminder');
         register_setting('event_show_settings', 'event_show_email_template_update');
+        register_setting('event_show_settings', 'event_show_email_subject_update');
         register_setting('event_show_settings', 'event_show_email_notifications_enabled');
         register_setting('event_show_settings', 'event_show_admin_email');
         register_setting('event_show_settings', 'event_show_min_days_advance');
@@ -203,14 +261,20 @@ class Event_Show_Admin
                     ];
                     foreach ($plantillas as $key => $label):
                         $option = 'event_show_email_template_' . $key;
+                        $subject_option = 'event_show_email_subject_' . $key;
                         $value = get_option($option, '<p>Hola {{Nombre usuario}},<br>Gracias por tu interés en <b>{{Titulo evento}}</b>.<br>Fecha: {{Fecha}}<br>Hora: {{Hora}}<br>Más info: {{Enlace evento}}</p>');
+                        $subject_value = get_option($subject_option, '');
                     ?>
                         <tr>
-                            <th scope="row">
+                            <th scope="row" style="width:220px;vertical-align:top;">
                                 <?php echo esc_html($label); ?><br>
-                                <button type="button" class="button button-secondary preview-email-template" data-template-id="<?php echo esc_attr($key); ?>">Vista previa</button>
+                                <button type="button" class="button button-secondary send-test-email-template" data-template-id="<?php echo esc_attr($key); ?>">Enviar mensaje test</button>
                             </th>
                             <td>
+                                <label for="<?php echo esc_attr($subject_option); ?>"><strong>Asunto del correo:</strong></label><br>
+                                <input type="text" name="<?php echo esc_attr($subject_option); ?>" id="<?php echo esc_attr($subject_option); ?>" value="<?php echo esc_attr($subject_value); ?>" style="width:100%;margin-bottom:8px;" class="regular-text">
+                                <br>
+                                <label for="<?php echo esc_attr($option); ?>"><strong>Contenido del correo:</strong></label><br>
                                 <textarea name="<?php echo esc_attr($option); ?>" id="<?php echo esc_attr($option); ?>" rows="7" style="width:100%;font-family:monospace;"><?php echo esc_textarea($value); ?></textarea>
                             </td>
                         </tr>
@@ -318,47 +382,90 @@ class Event_Show_Admin
         </div>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                        function getExampleData() {
-                            return {
-                                '{{Titulo evento}}': 'Concierto de Rock',
-                                '{{Fecha}}': '25/01/2026',
-                                '{{Hora}}': '20:00',
-                                '{{Nombre usuario}}': 'Juan Pérez',
-                                '{{Email usuario}}': 'juan.perez@email.com',
-                                '{{Enlace evento}}': 'https://tusitio.com/evento/concierto-rock',
-                                '{{Organizador}}': 'Producciones XYZ',
-                                '{{Lugar}}': 'Teatro Principal',
-                            };
-                        }
+                function getExampleData() {
+                    return {
+                        '{{Titulo evento}}': 'Concierto de Rock',
+                        '{{Fecha}}': '25/01/2026',
+                        '{{Hora}}': '20:00',
+                        '{{Nombre usuario}}': 'Juan Pérez',
+                        '{{Email usuario}}': 'juan.perez@email.com',
+                        '{{Enlace evento}}': 'https://tusitio.com/evento/concierto-rock',
+                        '{{Organizador}}': 'Producciones XYZ',
+                        '{{Lugar}}': 'Teatro Principal',
+                    };
+                }
 
-                        function renderPreview(template) {
-                            let data = getExampleData();
-                            let html = template;
-                            Object.keys(data).forEach(function(tag) {
-                                    let re = new RegExp(tag.replace(/[{}]/g, m => '\' + m), '
-                                        g ');
-                                        html = html.replace(re, data[tag]);
-                                    });
-                                    return html;
+                function renderPreview(template) {
+                    let data = getExampleData();
+                    let html = template;
+                    Object.keys(data).forEach(function(tag) {
+                        let re = new RegExp(tag.replace(/[{}]/g, m => '\\' + m), 'g');
+                        html = html.replace(re, data[tag]);
+                    });
+                    return html;
+                }
+
+                // Botón de enviar email de prueba
+                document.querySelectorAll('.send-test-email-template').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        let id = btn.getAttribute('data-template-id');
+                        let textarea = document.getElementById('event_show_email_template_' + id);
+                        let template = textarea.value;
+                        btn.disabled = true;
+                        let originalText = btn.textContent;
+                        btn.textContent = 'Enviando...';
+
+                        var ajaxUrl = eventShowAdmin.ajaxUrl;
+                        var nonce = eventShowAdmin.nonce;
+
+                        fetch(ajaxUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: 'action=event_show_send_test_email&nonce=' + encodeURIComponent(nonce) + '&template_type=' + encodeURIComponent(id) + '&template=' + encodeURIComponent(template)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                btn.disabled = false;
+                                btn.textContent = originalText;
+                                if (data && data.success) {
+                                    alert('✓ Correo de prueba enviado correctamente al administrador.');
+                                } else {
+                                    alert('✗ Error al enviar el correo de prueba: ' + (data.data || 'Error desconocido'));
                                 }
-                                document.querySelectorAll('.preview-email-template').forEach(function(btn) {
-                                    btn.addEventListener('click', function() {
-                                        let id = btn.getAttribute('data-template-id');
-                                        let textarea = document.getElementById('event_show_email_template_' + id);
-                                        let html = renderPreview(textarea.value);
-                                        document.getElementById('event-show-email-preview-content').innerHTML = html;
-                                        document.getElementById('event-show-email-preview-modal').style.display = 'flex';
-                                    });
-                                }); document.getElementById('close-email-preview-modal').addEventListener('click', function() {
-                                    document.getElementById('event-show-email-preview-modal').style.display = 'none';
-                                });
-                                // Cerrar modal con Escape
-                                document.addEventListener('keydown', function(e) {
-                                    if (e.key === 'Escape') {
-                                        document.getElementById('event-show-email-preview-modal').style.display = 'none';
-                                    }
-                                });
+                            })
+                            .catch(error => {
+                                btn.disabled = false;
+                                btn.textContent = originalText;
+                                alert('✗ Error de conexión al enviar el correo de prueba.');
+                                console.error('Error:', error);
                             });
+                    });
+                });
+
+                // Vista previa de email
+                document.querySelectorAll('.preview-email-template').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        let id = btn.getAttribute('data-template-id');
+                        let textarea = document.getElementById('event_show_email_template_' + id);
+                        let html = renderPreview(textarea.value);
+                        document.getElementById('event-show-email-preview-content').innerHTML = html;
+                        document.getElementById('event-show-email-preview-modal').style.display = 'flex';
+                    });
+                });
+
+                document.getElementById('close-email-preview-modal').addEventListener('click', function() {
+                    document.getElementById('event-show-email-preview-modal').style.display = 'none';
+                });
+
+                // Cerrar modal con Escape
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        document.getElementById('event-show-email-preview-modal').style.display = 'none';
+                    }
+                });
+            });
         </script>
     <?php
     }
