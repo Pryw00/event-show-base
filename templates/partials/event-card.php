@@ -28,7 +28,7 @@ $organizadores = wp_get_post_terms($event_id, 'organizador');
         <div class="event-card-date">
             <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'd M Y')); ?>
             <?php if ($event_time) : ?>
-                <span class="event-card-time"><?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?></span>
+                <span class="event-card-time"><?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?></span>
             <?php endif; ?>
         </div>
 

@@ -41,13 +41,13 @@ $autoplay_speed = isset($atts['autoplay_speed']) ? intval($atts['autoplay_speed'
                             <?php if ($event_date) : ?>
                                 <span class="slider-date">
                                     <span class="dashicons dashicons-calendar-alt"></span>
-                                    <?php echo esc_html(Event_Show_Helpers::format_date($event_date)); ?>
+                                    <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'd M Y')); ?>
                                 </span>
                             <?php endif; ?>
                             <?php if ($event_time) : ?>
                                 <span class="slider-time">
                                     <span class="dashicons dashicons-clock"></span>
-                                    <?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?>
+                                    <?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?>
                                 </span>
                             <?php endif; ?>
                         </div>
