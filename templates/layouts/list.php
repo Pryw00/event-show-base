@@ -35,7 +35,13 @@
 
                     <div class="event-list-content">
                         <div class="event-list-meta">
-                            <span class="event-date"><?php echo esc_html(Event_Show_Helpers::format_datetime($event_date, $event_time)); ?></span>
+                            <?php $event_time_indef = get_post_meta($event_id, '_event_time_indef', true); ?>
+                            <span class="event-date">
+                                <?php echo esc_html(Event_Show_Helpers::format_date($event_date)); ?>
+                                <?php if ($event_time && $event_time_indef !== '1') : ?>
+                                    - <?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?>
+                                <?php endif; ?>
+                            </span>
                             <?php if (! empty($organizadores)) : ?>
                                 <span class="event-organizer"><?php echo esc_html($organizadores[0]->name); ?></span>
                             <?php endif; ?>

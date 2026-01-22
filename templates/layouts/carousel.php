@@ -20,6 +20,7 @@ $show_countdown = isset($atts['show_countdown']) && 'yes' === $atts['show_countd
                     $event_id = get_the_ID();
                     $event_date = get_post_meta($event_id, '_event_date', true);
                     $event_time = get_post_meta($event_id, '_event_time', true);
+                    $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
                     $thumbnail_id = get_post_meta($event_id, '_event_thumbnail', true);
                     $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'large') : get_the_post_thumbnail_url($event_id, 'large');
 
@@ -40,7 +41,7 @@ $show_countdown = isset($atts['show_countdown']) && 'yes' === $atts['show_countd
                         <div class="carousel-slide-content">
                             <div class="slide-meta">
                                 <span class="slide-date"><?php echo esc_html(Event_Show_Helpers::format_date($event_date)); ?></span>
-                                <?php if ($event_time) : ?>
+                                <?php if ($event_time && $event_time_indef !== '1') : ?>
                                     <span class="slide-time"><?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?></span>
                                 <?php endif; ?>
                             </div>

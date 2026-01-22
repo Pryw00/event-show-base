@@ -18,6 +18,7 @@ if (! $event_id || 'evento' !== get_post_type($event_id)) {
 
 $event_date = get_post_meta($event_id, '_event_date', true);
 $event_time = get_post_meta($event_id, '_event_time', true);
+$event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
 $event_end_date = get_post_meta($event_id, '_event_end_date', true);
 $event_end_time = get_post_meta($event_id, '_event_end_time', true);
 
@@ -63,6 +64,9 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                     <?php if ($event_date) : ?>
                         <span class="event-hero-date">
                             <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'M d')); ?>
+                            <?php if ($event_time && $event_time_indef !== '1') : ?>
+                                - <?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?>
+                            <?php endif; ?>
                         </span>
                     <?php endif; ?>
                     <?php if ($lugar) : ?>
@@ -103,6 +107,17 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                         <span class="organizer-label"><?php esc_html_e('Organizado por', 'event-show-base'); ?></span>
                         <strong class="organizer-name"><?php echo esc_html($organizador->name); ?></strong>
                     </div>
+                    <div class="organizer-text-info">
+                        <?php if ($organizador_phone) : ?>
+                            <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?>" target="_blank" title="WhatsApp" style="margin-left:6px;"><span class="dashicons dashicons-whatsapp"></span></a>
+                        <?php endif; ?>
+                        <?php if ($organizador_email) : ?>
+                            <a href="mailto:<?php echo esc_attr($organizador_email); ?>" title="Email" style="margin-left:6px;"><span class="dashicons dashicons-email"></span></a>
+                        <?php endif; ?>
+                        <?php if ($organizador_website) : ?>
+                            <a href="<?php echo esc_url($organizador_website); ?>" target="_blank" title="Web" style="margin-left:6px;"><span class="dashicons dashicons-admin-site"></span></a>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -112,7 +127,12 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                     <span class="detail-icon dashicons dashicons-calendar"></span>
                     <div class="detail-info">
                         <span class="detail-label"><?php esc_html_e('Fecha y hora', 'event-show-base'); ?></span>
-                        <span class="detail-value"><?php echo esc_html(Event_Show_Helpers::format_datetime($event_date, $event_time)); ?></span>
+                        <span class="detail-value">
+                            <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'M d')); ?>
+                            <?php if ($event_time && $event_time_indef !== '1') : ?>
+                                - <?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?>
+                            <?php endif; ?>
+                        </span>
                     </div>
                 </div>
 
@@ -121,7 +141,15 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                         <span class="detail-icon dashicons dashicons-location"></span>
                         <div class="detail-info">
                             <span class="detail-label"><?php esc_html_e('Lugar', 'event-show-base'); ?></span>
-                            <span class="detail-value"><?php echo esc_html($lugar->name); ?></span>
+                            <span class="detail-value">
+                                <?php if (!empty($lugar_map_url)) : ?>
+                                    <a href="<?php echo esc_url($lugar_map_url); ?>" target="_blank" rel="noopener" title="<?php esc_attr_e('Ver ubicación', 'event-show-base'); ?>">
+                                        <?php echo esc_html($lugar->name); ?>
+                                    </a>
+                                <?php else : ?>
+                                    <?php echo esc_html($lugar->name); ?>
+                                <?php endif; ?>
+                            </span>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -185,6 +213,15 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                         <div class="organizer-meta">
                             <span class="organizer-published-by"><?php esc_html_e('Publicado por', 'event-show-base'); ?></span>
                             <strong class="organizer-name-large"><?php echo esc_html($organizador->name); ?></strong>
+                            <?php if ($organizador_phone) : ?>
+                                <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?>" target="_blank" title="WhatsApp" style="margin-left:6px;"><span class="dashicons dashicons-whatsapp"></span> <?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?></a>
+                            <?php endif; ?>
+                            <?php if ($organizador_email) : ?>
+                                <a href="mailto:<?php echo esc_attr($organizador_email); ?>" title="Email" style="margin-left:6px;"><span class="dashicons dashicons-email"></span> <?php esc_html_e('Enviar email', 'event-show-base'); ?></a>
+                            <?php endif; ?>
+                            <?php if ($organizador_website) : ?>
+                                <a href="<?php echo esc_url($organizador_website); ?>" target="_blank" title="Web" style="margin-left:6px;"><span class="dashicons dashicons-admin-site"></span> Website</a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

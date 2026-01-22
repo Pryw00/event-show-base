@@ -85,6 +85,8 @@ class Event_Show_Metaboxes
         $event_time = get_post_meta($post->ID, '_event_time', true);
         $event_end_date = get_post_meta($post->ID, '_event_end_date', true);
         $event_end_time = get_post_meta($post->ID, '_event_end_time', true);
+        $event_time_indef = get_post_meta($post->ID, '_event_time_indef', true);
+        $event_end_time_indef = get_post_meta($post->ID, '_event_end_time_indef', true);
 ?>
         <div class="event-show-metabox-wrap">
             <table class="form-table">
@@ -112,7 +114,11 @@ class Event_Show_Metaboxes
                             id="event_time"
                             name="event_time"
                             value="<?php echo esc_attr($event_time); ?>"
-                            required>
+                            <?php echo ($event_time_indef == '1') ? 'disabled' : 'required'; ?>>
+                        <label style="margin-left:10px;">
+                            <input type="checkbox" id="event_time_indef" name="event_time_indef" value="1" <?php checked($event_time_indef, '1'); ?>>
+                            <?php esc_html_e('Hora indefinida', 'event-show-base'); ?>
+                        </label>
                         <p class="description"><?php esc_html_e('Hora de inicio del evento (formato 24h)', 'event-show-base'); ?></p>
                     </td>
                 </tr>
@@ -138,7 +144,12 @@ class Event_Show_Metaboxes
                         <input type="time"
                             id="event_end_time"
                             name="event_end_time"
-                            value="<?php echo esc_attr($event_end_time); ?>">
+                            value="<?php echo esc_attr($event_end_time); ?>"
+                            <?php echo ($event_end_time_indef == '1') ? 'disabled' : ''; ?>>
+                        <label style="margin-left:10px;">
+                            <input type="checkbox" id="event_end_time_indef" name="event_end_time_indef" value="1" <?php checked($event_end_time_indef, '1'); ?>>
+                            <?php esc_html_e('Hora indefinida', 'event-show-base'); ?>
+                        </label>
                         <p class="description"><?php esc_html_e('Hora de fin del evento (opcional)', 'event-show-base'); ?></p>
                     </td>
                 </tr>
@@ -296,13 +307,23 @@ class Event_Show_Metaboxes
         if (isset($_POST['event_date'])) {
             update_post_meta($post_id, '_event_date', sanitize_text_field($_POST['event_date']));
         }
-        if (isset($_POST['event_time'])) {
+        // Hora de inicio indefinida
+        $event_time_indef = isset($_POST['event_time_indef']) ? '1' : '0';
+        update_post_meta($post_id, '_event_time_indef', $event_time_indef);
+        if ($event_time_indef === '1') {
+            update_post_meta($post_id, '_event_time', '');
+        } elseif (isset($_POST['event_time'])) {
             update_post_meta($post_id, '_event_time', sanitize_text_field($_POST['event_time']));
         }
         if (isset($_POST['event_end_date'])) {
             update_post_meta($post_id, '_event_end_date', sanitize_text_field($_POST['event_end_date']));
         }
-        if (isset($_POST['event_end_time'])) {
+        // Hora de fin indefinida
+        $event_end_time_indef = isset($_POST['event_end_time_indef']) ? '1' : '0';
+        update_post_meta($post_id, '_event_end_time_indef', $event_end_time_indef);
+        if ($event_end_time_indef === '1') {
+            update_post_meta($post_id, '_event_end_time', '');
+        } elseif (isset($_POST['event_end_time'])) {
             update_post_meta($post_id, '_event_end_time', sanitize_text_field($_POST['event_end_time']));
         }
         // Guardar miniatura

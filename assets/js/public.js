@@ -196,6 +196,8 @@
           $("#edit_org_image_preview").attr("src", e.target.result).show();
         };
         reader.readAsDataURL(input.files[0]);
+        // Limpiar el campo oculto de ID de imagen si se selecciona una nueva
+        $("#edit_org_image").val("");
       } else {
         $("#edit_org_image_preview").hide();
       }

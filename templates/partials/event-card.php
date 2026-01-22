@@ -9,6 +9,7 @@
 $event_id = get_the_ID();
 $event_date = get_post_meta($event_id, '_event_date', true);
 $event_time = get_post_meta($event_id, '_event_time', true);
+$event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
 $thumbnail_id = get_post_meta($event_id, '_event_thumbnail', true);
 $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : get_the_post_thumbnail_url($event_id, 'medium');
 
@@ -27,7 +28,7 @@ $organizadores = wp_get_post_terms($event_id, 'organizador');
     <div class="event-card-content">
         <div class="event-card-date">
             <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'd M Y')); ?>
-            <?php if ($event_time) : ?>
+            <?php if ($event_time && $event_time_indef !== '1') : ?>
                 <span class="event-card-time"><?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?></span>
             <?php endif; ?>
         </div>

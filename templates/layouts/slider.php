@@ -27,6 +27,7 @@ $autoplay_speed = isset($atts['autoplay_speed']) ? intval($atts['autoplay_speed'
                     $event_id = get_the_ID();
                     $event_date = get_post_meta($event_id, '_event_date', true);
                     $event_time = get_post_meta($event_id, '_event_time', true);
+                    $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
                     $lugares = wp_get_post_terms($event_id, 'lugar');
                     $categorias = wp_get_post_terms($event_id, 'categoria_evento');
                 ?>
@@ -44,7 +45,7 @@ $autoplay_speed = isset($atts['autoplay_speed']) ? intval($atts['autoplay_speed'
                                     <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'd M Y')); ?>
                                 </span>
                             <?php endif; ?>
-                            <?php if ($event_time) : ?>
+                            <?php if ($event_time && $event_time_indef !== '1') : ?>
                                 <span class="slider-time">
                                     <span class="dashicons dashicons-clock"></span>
                                     <?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?>

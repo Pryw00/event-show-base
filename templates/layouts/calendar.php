@@ -48,6 +48,7 @@
                             $event = get_post($event_id);
                             $event_date = get_post_meta($event_id, '_event_date', true);
                             $event_time = get_post_meta($event_id, '_event_time', true);
+                            $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
                             $lugares = wp_get_post_terms($event_id, 'lugar');
 
                             $day = date_i18n('d', strtotime(str_replace('/', '-', $event_date)));
@@ -60,7 +61,9 @@
                                 </div>
                                 <div class="calendar-event-info">
                                     <h4><a href="<?php echo esc_url(get_permalink($event_id)); ?>"><?php echo esc_html($event->post_title); ?></a></h4>
-                                    <p class="event-time"><?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?></p>
+                                    <?php if ($event_time && $event_time_indef !== '1') : ?>
+                                        <p class="event-time"><?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?></p>
+                                    <?php endif; ?>
                                     <?php if (! empty($lugares)) : ?>
                                         <p class="event-location"><span class="dashicons dashicons-location"></span> <?php echo esc_html($lugares[0]->name); ?></p>
                                     <?php endif; ?>

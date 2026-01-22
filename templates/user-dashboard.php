@@ -67,6 +67,7 @@ $user_events = new WP_Query(array(
                             $event_id = get_the_ID();
                             $event_date = get_post_meta($event_id, '_event_date', true);
                             $event_time = get_post_meta($event_id, '_event_time', true);
+                            $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
                             $total_attendees = Event_Show_Attendees::get_total_attendees($event_id);
                             $status = get_post_status();
 
@@ -92,7 +93,10 @@ $user_events = new WP_Query(array(
                                     <strong><a href="<?php the_permalink(); ?>" target="_blank"><?php the_title(); ?></a></strong>
                                 </td>
                                 <td>
-                                    <?php echo esc_html(Event_Show_Helpers::format_datetime($event_date, $event_time)); ?>
+                                    <?php echo esc_html(Event_Show_Helpers::format_date($event_date)); ?>
+                                    <?php if ($event_time && $event_time_indef !== '1') : ?>
+                                        - <?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <span class="event-status <?php echo esc_attr($status_info['class']); ?>">
@@ -163,6 +167,10 @@ $user_events = new WP_Query(array(
                         <div class="form-group form-col-half">
                             <label><?php esc_html_e('Hora de Inicio', 'event-show-base'); ?> *</label>
                             <input type="time" id="edit_event_time" name="event_time" class="form-control" required>
+                            <label style="margin-left:10px; font-weight:normal;">
+                                <input type="checkbox" id="edit_event_time_indef" name="event_time_indef" value="1">
+                                <?php esc_html_e('Hora indefinida', 'event-show-base'); ?>
+                            </label>
                         </div>
                     </div>
 
@@ -174,6 +182,10 @@ $user_events = new WP_Query(array(
                         <div class="form-group form-col-half">
                             <label><?php esc_html_e('Hora de Fin', 'event-show-base'); ?></label>
                             <input type="time" id="edit_event_end_time" name="event_end_time" class="form-control">
+                            <label style="margin-left:10px; font-weight:normal;">
+                                <input type="checkbox" id="edit_event_end_time_indef" name="event_end_time_indef" value="1">
+                                <?php esc_html_e('Hora indefinida', 'event-show-base'); ?>
+                            </label>
                         </div>
                     </div>
 
@@ -294,6 +306,7 @@ $user_events = new WP_Query(array(
                     <h3><?php esc_html_e('Editar Ficha de Organizador', 'event-show-base'); ?></h3>
                     <form id="edit-organizer-form">
                         <input type="hidden" name="term_id" id="edit_org_id" value="">
+                        <input type="hidden" name="image" id="edit_org_image" value="">
                         <div class="form-group">
                             <label><?php esc_html_e('Nombre', 'event-show-base'); ?> *</label>
                             <input type="text" name="name" id="edit_org_name" class="form-control" required>
