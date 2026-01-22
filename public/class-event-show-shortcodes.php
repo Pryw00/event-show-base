@@ -318,7 +318,45 @@ class Event_Show_Shortcodes
         // Verificar si el registro está habilitado
         $enable_registration = get_post_meta($event_id, '_enable_registration', true);
         if ('0' === $enable_registration) {
-            return '<p class="event-registration-disabled">' . esc_html__('El registro para este evento está deshabilitado', 'event-show-base') . '</p>';
+            // Obtener organizador desde la taxonomía 'organizador' (como en single-event.php)
+            $organizadores = wp_get_post_terms($event_id, 'organizador', array('number' => 1));
+            $organizador = !empty($organizadores) ? $organizadores[0] : null;
+            $organizador_name = $organizador ? $organizador->name : '';
+            $organizador_email = $organizador ? get_term_meta($organizador->term_id, 'email', true) : '';
+            $organizador_phone = $organizador ? get_term_meta($organizador->term_id, 'phone', true) : '';
+            $organizador_image = $organizador ? get_term_meta($organizador->term_id, 'image', true) : '';
+            $organizador_website = $organizador ? get_term_meta($organizador->term_id, 'website', true) : '';
+
+            // Avatar
+            if ($organizador_image) {
+                $organizer_avatar = wp_get_attachment_image($organizador_image, 'thumbnail', false, array('class' => 'organizer-avatar', 'style' => 'border-radius:50%;width:64px;height:64px;object-fit:cover;'));
+            } else {
+                $organizer_avatar = '<span class="dashicons dashicons-businessperson" style="font-size:48px;color:#888;"></span>';
+            }
+
+            // Si hay al menos nombre, email o teléfono, mostrar la tarjeta
+            if ($organizador_name || $organizador_email || $organizador_phone) {
+                $contact_buttons = '';
+                if ($organizador_email) {
+                    $contact_buttons .= '<a href="mailto:' . esc_attr($organizador_email) . '" class="event-contact-btn" style="display:inline-block;margin:0 6px 0 0;padding:8px 16px;color:#fff;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-email"></span> Email</a>';
+                }
+                if ($organizador_phone) {
+                    $contact_buttons .= '<a href="tel:' . esc_attr($organizador_phone) . '" class="event-contact-btn" style="display:inline-block;margin:0 6px 0 0;padding:8px 16px;color:#fff;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-phone"></span> Teléfono</a>';
+                }
+                if ($organizador_website) {
+                    $contact_buttons .= '<a href="' . esc_url($organizador_website) . '" target="_blank" class="event-contact-btn" style="display:inline-block;margin:0 6px 0 0;padding:8px 16px;color:#fff;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-admin-site"></span> Web</a>';
+                }
+
+                return '<div class="event-organizer-contact-card" style="box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:24px 20px 18px 20px;border-radius:12px;max-width:400px;margin:0 auto 24px auto;text-align:center;">'
+                    . '<div style="margin-bottom:12px;">' . $organizer_avatar . '</div>'
+                    . ($organizador_name ? '<div style="font-size:18px;font-weight:600;">' . esc_html($organizador_name) . '</div>' : '')
+                    . ($organizador_email ? '<div style="font-size:14px;margin-bottom:2px;">' . esc_html__('Para registrarte en este evento, contacta directamente con el organizador.', 'event-show-base') . '</div>' : '')
+                    . ($contact_buttons ? '<div style="margin-top:10px;">' . $contact_buttons . '</div>' : '')
+                    . '</div>';
+            } else {
+                // Si no hay datos del organizador, solo mostrar el mensaje genérico
+                return '<div style="text-align:center;font-size:15px;color:#444;margin:24px auto;">' . esc_html__('Para registrarte en este evento, contacta directamente con el organizador.', 'event-show-base') . '</div>';
+            }
         }
 
         // Verificar si el evento ya pasó
