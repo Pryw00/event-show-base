@@ -142,58 +142,118 @@ $current_user = wp_get_current_user();
         </div>
 
         <?php
-        if (current_user_can('manage_options')) :
-            // Admin: puede elegir cualquier organizador
+        // Verificar si la integración con establecimientos está disponible
+        $has_establishments = class_exists('Event_Show_Integrations') && 
+                            Event_Show_Integrations::has_establishments_integration();
+        
+        if ($has_establishments) :
+            // MODO: Establecimientos como organizadores
+            // Obtener establecimientos del usuario actual
+            $current_user_id = get_current_user_id();
+            $query_args = array(
+                'post_type'      => 'establecimiento',
+                'posts_per_page' => -1,
+                'post_status'    => 'publish',
+                'orderby'        => 'title',
+                'order'          => 'ASC',
+            );
+
+            // Si no es administrador, filtrar por autor
+            if (!current_user_can('manage_options')) {
+                $query_args['author'] = $current_user_id;
+            }
+
+            $user_establecimientos = get_posts($query_args);
         ?>
-            <div class="form-group">
-                <label for="event_organizer"><?php esc_html_e('Organizador', 'event-show-base'); ?> *</label>
-                <select id="event_organizer" name="organizer" class="form-control" required>
-                    <option value=""><?php esc_html_e('Seleccionar organizador', 'event-show-base'); ?></option>
-                    <?php
-                    $organizers = get_terms(array(
-                        'taxonomy' => 'organizador',
-                        'hide_empty' => false,
-                    ));
-                    foreach ($organizers as $org) :
-                    ?>
-                        <option value="<?php echo esc_attr($org->term_id); ?>"><?php echo esc_html($org->name); ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <p class="description">
-                    <?php esc_html_e('¿No encuentras tu organizador?', 'event-show-base'); ?>
-                    <a href="#" class="create-organizer-link"><?php esc_html_e('Crear nuevo', 'event-show-base'); ?></a>
-                </p>
-            </div>
-            <?php else :
-            // Usuario normal: usar organizador_ids
-            $user_organizadores = get_user_meta(get_current_user_id(), 'organizador_ids', true);
-            if (!is_array($user_organizadores)) $user_organizadores = array();
-            if (count($user_organizadores) > 1) :
-                $terms = get_terms(array(
-                    'taxonomy' => 'organizador',
-                    'hide_empty' => false,
-                    'include' => $user_organizadores,
-                ));
-            ?>
+
+            <?php if (!empty($user_establecimientos)) : ?>
                 <div class="form-group">
-                    <label for="event_organizer"><?php esc_html_e('Organizador', 'event-show-base'); ?> *</label>
-                    <select id="event_organizer" name="organizer" class="form-control" required>
-                        <option value=""><?php esc_html_e('Seleccionar organizador', 'event-show-base'); ?></option>
-                        <?php foreach ($terms as $org) : ?>
-                            <option value="<?php echo esc_attr($org->term_id); ?>"><?php echo esc_html($org->name); ?></option>
+                    <label for="event_organizer_id">
+                        <?php esc_html_e('Establecimiento Organizador', 'event-show-base'); ?> *
+                    </label>
+                    <select id="event_organizer_id" name="organizer_id" class="form-control" required>
+                        <option value=""><?php esc_html_e('-- Seleccionar establecimiento --', 'event-show-base'); ?></option>
+                        <?php foreach ($user_establecimientos as $establecimiento) : ?>
+                            <option value="<?php echo esc_attr($establecimiento->ID); ?>">
+                                <?php echo esc_html($establecimiento->post_title); ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
-                    <p class="description"><?php esc_html_e('Solo puedes elegir entre tus fichas de organizador asignadas.', 'event-show-base'); ?></p>
+                    <p class="description">
+                        <?php
+                        if (current_user_can('manage_options')) {
+                            esc_html_e('Selecciona el establecimiento que organiza este evento.', 'event-show-base');
+                        } else {
+                            esc_html_e('Solo puedes seleccionar tus propios establecimientos. ¿No tienes uno?', 'event-show-base');
+                            echo ' <a href="' . esc_url(admin_url('post-new.php?post_type=establecimiento')) . '">' . esc_html__('Crear establecimiento', 'event-show-base') . '</a>';
+                        }
+                        ?>
+                    </p>
                 </div>
-            <?php elseif (count($user_organizadores) === 1) : ?>
-                <input type="hidden" name="organizer" value="<?php echo esc_attr($user_organizadores[0]); ?>">
             <?php else : ?>
                 <div class="form-group">
-                    <div class="alert alert-warning">
-                        <?php esc_html_e('No tienes ninguna ficha de organizador asignada. Contacta al administrador.', 'event-show-base'); ?>
+                    <div class="alert alert-warning" style="padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">
+                        <strong><?php esc_html_e('¡Atención!', 'event-show-base'); ?></strong>
+                        <p><?php esc_html_e('No tienes establecimientos disponibles. Debes crear al menos un establecimiento para poder publicar eventos.', 'event-show-base'); ?></p>
+                        <a href="<?php echo esc_url(admin_url('post-new.php?post_type=establecimiento')); ?>" class="button button-primary">
+                            <?php esc_html_e('Crear mi primer establecimiento', 'event-show-base'); ?>
+                        </a>
                     </div>
                 </div>
             <?php endif; ?>
+
+        <?php else :
+            // MODO: Taxonomía organizador (fallback)
+            // Obtener solo organizadores aprobados y del usuario actual
+            $current_user_id = get_current_user_id();
+        ?>
+            <div class="form-group">
+                <label for="event_organizer">
+                    <?php esc_html_e('Organizador', 'event-show-base'); ?>
+                </label>
+                <select id="event_organizer" name="organizer" class="form-control">
+                    <option value=""><?php esc_html_e('-- Seleccionar organizador --', 'event-show-base'); ?></option>
+                    <?php
+                    // Obtener solo organizadores del usuario actual que estén aprobados
+                    $organizers = get_terms(array(
+                        'taxonomy' => 'organizador',
+                        'hide_empty' => false,
+                        'meta_query' => array(
+                            'relation' => 'AND',
+                            array(
+                                'key' => 'owner_id',
+                                'value' => $current_user_id,
+                                'compare' => '='
+                            ),
+                            array(
+                                'key' => 'status',
+                                'value' => 'approved',
+                                'compare' => '='
+                            )
+                        ),
+                    ));
+                    
+                    foreach ($organizers as $org) :
+                    ?>
+                        <option value="<?php echo esc_attr($org->term_id); ?>"><?php echo esc_html($org->name); ?></option>
+                    <?php
+                    endforeach;
+                    ?>
+                </select>
+                <p class="description">
+                    <?php esc_html_e('Solo puedes usar organizadores que te pertenecen y estén aprobados.', 'event-show-base'); ?>
+                    <a href="#" class="create-organizer-link"><?php esc_html_e('Crear nuevo', 'event-show-base'); ?></a>
+                </p>
+                
+                <?php if (empty($organizers)) : ?>
+                    <div class="alert alert-info" style="padding: 10px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px; margin-top: 10px;">
+                        <p style="margin: 0;">
+                            <span class="dashicons dashicons-info" style="vertical-align: middle;"></span>
+                            <?php esc_html_e('No tienes organizadores aprobados. Crea uno nuevo y espera la aprobación del administrador.', 'event-show-base'); ?>
+                        </p>
+                    </div>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
 
         <div class="form-group">

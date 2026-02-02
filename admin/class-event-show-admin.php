@@ -178,6 +178,16 @@ class Event_Show_Admin
             'event-show-attendees',
             array($this, 'render_attendees_page')
         );
+        
+        // Página de aprobación de organizadores
+        add_submenu_page(
+            'edit.php?post_type=evento',
+            __('Aprobar Organizadores', 'event-show-base'),
+            __('Organizadores Pendientes', 'event-show-base'),
+            'manage_options',
+            'event-show-approve-organizers',
+            array($this, 'render_approve_organizers_page')
+        );
     }
 
     /**
@@ -915,5 +925,222 @@ class Event_Show_Admin
 <?php
             delete_transient('event_show_validation_error_' . $post->ID);
         }
+    }
+
+    /**
+     * Renderizar página de aprobación de organizadores
+     */
+    public function render_approve_organizers_page()
+    {
+        // Procesar acciones de aprobación/rechazo
+        if (isset($_POST['action']) && isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'approve_organizers')) {
+            $action = sanitize_text_field($_POST['action']);
+            $term_id = isset($_POST['term_id']) ? intval($_POST['term_id']) : 0;
+            
+            if ($term_id && in_array($action, array('approve', 'reject'))) {
+                $new_status = $action === 'approve' ? 'approved' : 'rejected';
+                update_term_meta($term_id, 'status', $new_status);
+                
+                // Obtener info del organizador para logging
+                $term = get_term($term_id, 'organizador');
+                $owner_id = get_term_meta($term_id, 'owner_id', true);
+                
+                if (class_exists('Event_Show_Logger')) {
+                    Event_Show_Logger::log_activity(
+                        'organizer_' . $action . 'd',
+                        get_current_user_id(),
+                        'Organizador ' . ($action === 'approve' ? 'aprobado' : 'rechazado') . ': ' . $term->name,
+                        array('term_id' => $term_id, 'owner_id' => $owner_id)
+                    );
+                }
+                
+                echo '<div class="notice notice-success is-dismissible"><p>';
+                echo $action === 'approve' 
+                    ? __('Organizador aprobado correctamente.', 'event-show-base')
+                    : __('Organizador rechazado.', 'event-show-base');
+                echo '</p></div>';
+            }
+        }
+        
+        // Obtener organizadores pendientes
+        $pending_organizers = get_terms(array(
+            'taxonomy' => 'organizador',
+            'hide_empty' => false,
+            'meta_query' => array(
+                array(
+                    'key' => 'status',
+                    'value' => 'pending',
+                    'compare' => '='
+                )
+            ),
+        ));
+        
+        ?>
+        <div class="wrap">
+            <h1><?php esc_html_e('Aprobar Organizadores', 'event-show-base'); ?></h1>
+            
+            <p><?php esc_html_e('Los usuarios pueden crear organizadores desde el frontend, pero necesitan tu aprobación antes de poder usarlos en sus eventos.', 'event-show-base'); ?></p>
+            
+            <?php if (!empty($pending_organizers) && !is_wp_error($pending_organizers)) : ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Nombre', 'event-show-base'); ?></th>
+                            <th><?php esc_html_e('Descripción', 'event-show-base'); ?></th>
+                            <th><?php esc_html_e('Propietario', 'event-show-base'); ?></th>
+                            <th><?php esc_html_e('Contacto', 'event-show-base'); ?></th>
+                            <th><?php esc_html_e('Acciones', 'event-show-base'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($pending_organizers as $organizer) : 
+                            $owner_id = get_term_meta($organizer->term_id, 'owner_id', true);
+                            $owner_name = get_term_meta($organizer->term_id, 'owner_name', true);
+                            $contact_info = get_term_meta($organizer->term_id, 'contact_info', true);
+                            $logo = get_term_meta($organizer->term_id, 'logo', true);
+                            
+                            // Obtener usuario propietario
+                            $owner = $owner_id ? get_user_by('ID', $owner_id) : null;
+                            $owner_display = $owner ? $owner->display_name . ' (' . $owner->user_email . ')' : $owner_name;
+                        ?>
+                            <tr>
+                                <td>
+                                    <strong><?php echo esc_html($organizer->name); ?></strong>
+                                    <?php if ($logo) : ?>
+                                        <br><img src="<?php echo esc_url($logo); ?>" style="max-width: 60px; max-height: 60px; margin-top: 5px; border-radius: 4px;">
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo esc_html(wp_trim_words($organizer->description, 15)); ?></td>
+                                <td>
+                                    <?php echo esc_html($owner_display); ?>
+                                    <?php if ($owner) : ?>
+                                        <br><a href="<?php echo esc_url(get_edit_user_link($owner_id)); ?>" target="_blank"><?php esc_html_e('Ver perfil', 'event-show-base'); ?></a>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo esc_html($contact_info); ?></td>
+                                <td>
+                                    <form method="post" style="display: inline-block; margin-right: 5px;">
+                                        <?php wp_nonce_field('approve_organizers'); ?>
+                                        <input type="hidden" name="term_id" value="<?php echo esc_attr($organizer->term_id); ?>">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit" class="button button-primary button-small">
+                                            <?php esc_html_e('Aprobar', 'event-show-base'); ?>
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="post" style="display: inline-block;" onsubmit="return confirm('<?php esc_attr_e('¿Estás seguro de rechazar este organizador?', 'event-show-base'); ?>');">
+                                        <?php wp_nonce_field('approve_organizers'); ?>
+                                        <input type="hidden" name="term_id" value="<?php echo esc_attr($organizer->term_id); ?>">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit" class="button button-small">
+                                            <?php esc_html_e('Rechazar', 'event-show-base'); ?>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else : ?>
+                <div class="notice notice-info">
+                    <p><?php esc_html_e('No hay organizadores pendientes de aprobación.', 'event-show-base'); ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <hr style="margin: 30px 0;">
+            
+            <h2><?php esc_html_e('Todos los Organizadores', 'event-show-base'); ?></h2>
+            
+            <?php
+            // Obtener todos los organizadores con propietario
+            $all_organizers = get_terms(array(
+                'taxonomy' => 'organizador',
+                'hide_empty' => false,
+                'meta_key' => 'owner_id',
+            ));
+            
+            if (!empty($all_organizers) && !is_wp_error($all_organizers)) :
+            ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Nombre', 'event-show-base'); ?></th>
+                            <th><?php esc_html_e('Propietario', 'event-show-base'); ?></th>
+                            <th><?php esc_html_e('Estado', 'event-show-base'); ?></th>
+                            <th><?php esc_html_e('Eventos', 'event-show-base'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($all_organizers as $organizer) : 
+                            $owner_id = get_term_meta($organizer->term_id, 'owner_id', true);
+                            $status = get_term_meta($organizer->term_id, 'status', true);
+                            $owner = $owner_id ? get_user_by('ID', $owner_id) : null;
+                            
+                            // Contar eventos
+                            $events = get_posts(array(
+                                'post_type' => 'evento',
+                                'posts_per_page' => -1,
+                                'tax_query' => array(
+                                    array(
+                                        'taxonomy' => 'organizador',
+                                        'field' => 'term_id',
+                                        'terms' => $organizer->term_id,
+                                    ),
+                                ),
+                                'fields' => 'ids',
+                            ));
+                            
+                            $status_labels = array(
+                                'approved' => __('Aprobado', 'event-show-base'),
+                                'pending' => __('Pendiente', 'event-show-base'),
+                                'rejected' => __('Rechazado', 'event-show-base'),
+                            );
+                            $status_display = isset($status_labels[$status]) ? $status_labels[$status] : __('Desconocido', 'event-show-base');
+                        ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($organizer->name); ?></strong></td>
+                                <td>
+                                    <?php if ($owner) : ?>
+                                        <?php echo esc_html($owner->display_name); ?>
+                                        <br><small><?php echo esc_html($owner->user_email); ?></small>
+                                    <?php else : ?>
+                                        <em><?php esc_html_e('Sin propietario', 'event-show-base'); ?></em>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-<?php echo esc_attr($status); ?>">
+                                        <?php echo esc_html($status_display); ?>
+                                    </span>
+                                </td>
+                                <td><?php echo count($events); ?> <?php esc_html_e('eventos', 'event-show-base'); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+            
+            <style>
+                .status-badge {
+                    display: inline-block;
+                    padding: 3px 10px;
+                    border-radius: 12px;
+                    font-size: 0.85em;
+                    font-weight: 500;
+                }
+                .status-badge.status-approved {
+                    background: #d4edda;
+                    color: #155724;
+                }
+                .status-badge.status-pending {
+                    background: #fff3cd;
+                    color: #856404;
+                }
+                .status-badge.status-rejected {
+                    background: #f8d7da;
+                    color: #721c24;
+                }
+            </style>
+        </div>
+        <?php
     }
 }

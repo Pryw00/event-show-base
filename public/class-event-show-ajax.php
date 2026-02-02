@@ -109,6 +109,10 @@ class Event_Show_Ajax
         add_action('wp_ajax_event_show_create_organizer', array($this, 'create_organizer'));
         add_action('wp_ajax_event_show_create_location', array($this, 'create_location'));
         add_action('wp_ajax_event_show_edit_organizer', array($this, 'edit_organizer'));
+        
+        // Nuevos AJAX para organizadores (dashboard)
+        add_action('wp_ajax_get_organizer_data', array($this, 'get_organizer_data'));
+        add_action('wp_ajax_save_organizer', array($this, 'save_organizer'));
 
         // Edición de eventos
         add_action('wp_ajax_event_show_get_event_data', array($this, 'get_event_data'));
@@ -202,7 +206,7 @@ class Event_Show_Ajax
         $event_time_end = isset($_POST['event_time_end']) ? sanitize_text_field($_POST['event_time_end']) : '';
         $category = isset($_POST['category']) ? absint($_POST['category']) : 0;
         $age_rating = isset($_POST['age_rating']) ? absint($_POST['age_rating']) : 0;
-        $organizer = isset($_POST['organizer']) ? absint($_POST['organizer']) : 0;
+        $organizer_id = isset($_POST['organizer_id']) ? absint($_POST['organizer_id']) : 0;
         $location = isset($_POST['location']) ? absint($_POST['location']) : 0;
 
         // Procesar imágenes obligatorias
@@ -302,23 +306,28 @@ class Event_Show_Ajax
         if ($age_rating) {
             wp_set_post_terms($event_id, array($age_rating), 'clasificacion_edad');
         }
-        // Asignar organizador según permisos y user meta (soporte múltiple)
-        if (current_user_can('manage_options')) {
-            if ($organizer) {
-                wp_set_post_terms($event_id, array($organizer), 'organizador');
-            }
-        } else {
-            $user_organizadores = get_user_meta(get_current_user_id(), 'organizador_ids', true);
-            if (is_array($user_organizadores) && count($user_organizadores) > 0) {
-                // Si el usuario envía un organizador válido y lo tiene asignado, usarlo
-                if ($organizer && in_array($organizer, $user_organizadores)) {
-                    wp_set_post_terms($event_id, array($organizer), 'organizador');
+
+        // Asignar establecimiento organizador y validar propiedad
+        if ($organizer_id) {
+            $establecimiento = get_post($organizer_id);
+
+            // Verificar que sea un establecimiento válido
+            if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
+                $current_user_id = get_current_user_id();
+
+                // Verificar que el usuario sea propietario (excepto administradores)
+                if (current_user_can('manage_options') || (int)$establecimiento->post_author === $current_user_id) {
+                    update_post_meta($event_id, '_event_organizer_id', $organizer_id);
                 } else {
-                    // Si solo tiene uno, asignar ese
-                    wp_set_post_terms($event_id, array($user_organizadores[0]), 'organizador');
+                    // Usuario intentó asignar un establecimiento que no le pertenece
+                    wp_delete_post($event_id, true);
+                    wp_send_json_error(array(
+                        'message' => __('No tienes permisos para usar ese establecimiento como organizador.', 'event-show-base'),
+                    ));
                 }
             }
         }
+
         if ($location) {
             wp_set_post_terms($event_id, array($location), 'lugar');
         }
@@ -746,5 +755,158 @@ class Event_Show_Ajax
                 'message' => __('No se pudieron cargar más eventos', 'event-show-base'),
             ));
         }
+    }
+
+    /**
+     * AJAX: Obtener datos de un organizador
+     */
+    public function get_organizer_data()
+    {
+        check_ajax_referer('event_show_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array(
+                'message' => __('Debes iniciar sesión', 'event-show-base'),
+            ));
+        }
+
+        $organizer_id = isset($_POST['organizer_id']) ? intval($_POST['organizer_id']) : 0;
+
+        if (!$organizer_id) {
+            wp_send_json_error(array(
+                'message' => __('ID de organizador inválido', 'event-show-base'),
+            ));
+        }
+
+        $term = get_term($organizer_id, 'organizador');
+
+        if (is_wp_error($term) || !$term) {
+            wp_send_json_error(array(
+                'message' => __('Organizador no encontrado', 'event-show-base'),
+            ));
+        }
+
+        wp_send_json_success(array(
+            'id' => $term->term_id,
+            'name' => $term->name,
+            'description' => $term->description,
+            'contact_info' => get_term_meta($term->term_id, 'contact_info', true),
+            'logo' => get_term_meta($term->term_id, 'logo', true),
+        ));
+    }
+
+    /**
+     * AJAX: Guardar organizador (crear o actualizar)
+     */
+    public function save_organizer()
+    {
+        check_ajax_referer('event_show_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array(
+                'message' => __('Debes iniciar sesión', 'event-show-base'),
+            ));
+        }
+
+        $current_user_id = get_current_user_id();
+        $organizer_id = isset($_POST['organizer_id']) ? intval($_POST['organizer_id']) : 0;
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+        $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        $contact_info = isset($_POST['contact_info']) ? sanitize_text_field($_POST['contact_info']) : '';
+        $logo = isset($_POST['logo']) ? esc_url_raw($_POST['logo']) : '';
+
+        if (empty($name)) {
+            wp_send_json_error(array(
+                'message' => __('El nombre es obligatorio', 'event-show-base'),
+            ));
+        }
+
+        if ($organizer_id) {
+            // Actualizar organizador existente
+            // Verificar que el usuario sea el propietario o admin
+            $owner_id = get_term_meta($organizer_id, 'owner_id', true);
+            
+            if (!current_user_can('manage_options') && $owner_id != $current_user_id) {
+                wp_send_json_error(array(
+                    'message' => __('No tienes permisos para editar este organizador', 'event-show-base'),
+                ));
+            }
+
+            $result = wp_update_term($organizer_id, 'organizador', array(
+                'name' => $name,
+                'description' => $description,
+            ));
+
+            if (is_wp_error($result)) {
+                wp_send_json_error(array(
+                    'message' => $result->get_error_message(),
+                ));
+            }
+
+            $term_id = $organizer_id;
+            
+            // Log de edición
+            Event_Show_Logger::log_activity(
+                'organizer_updated',
+                $current_user_id,
+                'Organizador actualizado: ' . $name,
+                array('term_id' => $term_id)
+            );
+        } else {
+            // Crear nuevo organizador
+            $result = wp_insert_term($name, 'organizador', array(
+                'description' => $description,
+            ));
+
+            if (is_wp_error($result)) {
+                wp_send_json_error(array(
+                    'message' => $result->get_error_message(),
+                ));
+            }
+
+            $term_id = $result['term_id'];
+            
+            // Establecer propietario
+            update_term_meta($term_id, 'owner_id', $current_user_id);
+            
+            // Establecer nombre del propietario para referencia
+            $current_user = wp_get_current_user();
+            update_term_meta($term_id, 'owner_name', $current_user->display_name);
+            
+            // Estado: pendiente hasta que un admin lo apruebe
+            // Solo admins pueden crear organizadores ya aprobados
+            $status = current_user_can('manage_options') ? 'approved' : 'pending';
+            update_term_meta($term_id, 'status', $status);
+            
+            // Log de creación
+            Event_Show_Logger::log_activity(
+                'organizer_created',
+                $current_user_id,
+                'Organizador creado: ' . $name . ' (Estado: ' . $status . ')',
+                array('term_id' => $term_id, 'status' => $status)
+            );
+        }
+
+        // Guardar otros metadatos
+        update_term_meta($term_id, 'contact_info', $contact_info);
+        update_term_meta($term_id, 'logo', $logo);
+        
+        // Mensaje de respuesta según si necesita aprobación
+        $message = '';
+        if ($organizer_id) {
+            $message = __('Organizador actualizado correctamente', 'event-show-base');
+        } else {
+            if (current_user_can('manage_options')) {
+                $message = __('Organizador creado y aprobado correctamente', 'event-show-base');
+            } else {
+                $message = __('Organizador creado. Está pendiente de aprobación por un administrador antes de poder usarse.', 'event-show-base');
+            }
+        }
+
+        wp_send_json_success(array(
+            'message' => $message,
+            'term_id' => $term_id,
+            'needs_approval' => !$organizer_id && !current_user_can('manage_options'),
+        ));
     }
 }

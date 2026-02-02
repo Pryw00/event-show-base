@@ -75,6 +75,7 @@ class Event_Show
         require_once EVENT_SHOW_PLUGIN_DIR . 'includes/class-event-show-notifications.php';
         require_once EVENT_SHOW_PLUGIN_DIR . 'includes/class-event-show-logger.php';
         require_once EVENT_SHOW_PLUGIN_DIR . 'includes/class-event-show-helpers.php';
+        require_once EVENT_SHOW_PLUGIN_DIR . 'includes/class-event-show-integrations.php';
 
         // Admin
         require_once EVENT_SHOW_PLUGIN_DIR . 'admin/class-event-show-admin.php';
@@ -102,6 +103,9 @@ class Event_Show
 
         // Inicializar componentes
         add_action('init', array($this, 'init_components'));
+
+        // Inicializar integraciones con otros plugins
+        new Event_Show_Integrations();
 
         // Enqueue scripts y styles
         add_action('wp_enqueue_scripts', array($this, 'enqueue_public_assets'));
