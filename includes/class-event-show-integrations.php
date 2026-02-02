@@ -158,7 +158,7 @@ class Event_Show_Integrations
 
         // Filtrar solo organizadores aprobados para no-admins
         if (!$is_admin) {
-            $organizadores = array_filter($organizadores, function($org) {
+            $organizadores = array_filter($organizadores, function ($org) {
                 $status = get_term_meta($org->term_id, 'status', true);
                 return $status === 'approved';
             });
@@ -173,10 +173,10 @@ class Event_Show_Integrations
             </p>
             <select name="event_organizer_id" id="event_organizer_id" class="widefat">
                 <option value=""><?php esc_html_e('-- Sin organizador --', 'event-show-base'); ?></option>
-                
+
                 <?php if (!empty($establecimientos)) : ?>
                     <optgroup label="<?php esc_attr_e('Establecimientos', 'event-show-base'); ?>">
-                        <?php foreach ($establecimientos as $establecimiento) : 
+                        <?php foreach ($establecimientos as $establecimiento) :
                             $value = 'establecimiento_' . $establecimiento->ID;
                         ?>
                             <option value="<?php echo esc_attr($value); ?>" <?php selected($organizer_value, $value); ?>>
@@ -185,15 +185,15 @@ class Event_Show_Integrations
                         <?php endforeach; ?>
                     </optgroup>
                 <?php endif; ?>
-                
+
                 <?php if (!empty($organizadores)) : ?>
                     <optgroup label="<?php esc_attr_e('Organizadores', 'event-show-base'); ?>">
-                        <?php foreach ($organizadores as $organizador) : 
+                        <?php foreach ($organizadores as $organizador) :
                             $value = 'organizador_' . $organizador->term_id;
                             $status = get_term_meta($organizador->term_id, 'status', true);
                         ?>
                             <option value="<?php echo esc_attr($value); ?>" <?php selected($organizer_value, $value); ?>>
-                                <?php 
+                                <?php
                                 echo esc_html($organizador->name);
                                 if ($is_admin && $status) {
                                     echo ' [' . esc_html(ucfirst($status)) . ']';
@@ -223,32 +223,32 @@ class Event_Show_Integrations
                 </div>
             <?php endif; ?>
 
-            <?php if ($organizer_value) : 
+            <?php if ($organizer_value) :
                 // Determinar tipo y enlace
                 $parts = explode('_', $organizer_value, 2);
                 $tipo = isset($parts[0]) ? $parts[0] : '';
                 $id = isset($parts[1]) ? $parts[1] : '';
                 $edit_link = '';
-                
+
                 if ($tipo === 'establecimiento' && $id) {
                     $edit_link = get_edit_post_link($id);
                 } elseif ($tipo === 'organizador' && $id) {
                     $edit_link = admin_url('term.php?taxonomy=organizador&tag_ID=' . $id);
                 }
-                
+
                 if ($edit_link) :
             ?>
-                <p style="margin-top: 10px;">
-                    <a href="<?php echo esc_url($edit_link); ?>" class="button button-small" target="_blank">
-                        <?php esc_html_e('Ver/Editar Organizador', 'event-show-base'); ?>
-                    </a>
-                </p>
-            <?php 
+                    <p style="margin-top: 10px;">
+                        <a href="<?php echo esc_url($edit_link); ?>" class="button button-small" target="_blank">
+                            <?php esc_html_e('Ver/Editar Organizador', 'event-show-base'); ?>
+                        </a>
+                    </p>
+            <?php
                 endif;
-            endif; 
+            endif;
             ?>
         </div>
-<?php
+    <?php
     }
 
     /**
@@ -305,7 +305,7 @@ class Event_Show_Integrations
                     if ($organizador && !is_wp_error($organizador)) {
                         $owner_id = get_term_meta($id, 'owner_id', true);
                         $status = get_term_meta($id, 'status', true);
-                        
+
                         // Verificar permisos: admin o dueño del organizador, y debe estar aprobado
                         if (current_user_can('manage_options') || ($owner_id == $current_user_id && $status === 'approved')) {
                             $can_save = true;
@@ -382,7 +382,7 @@ class Event_Show_Integrations
                 if ($organizador && !is_wp_error($organizador)) {
                     $logo = get_term_meta($id, 'logo', true);
                     $contact = get_term_meta($id, 'contact_info', true);
-                    
+
                     $data['organizer'] = array(
                         'id'      => $organizador->term_id,
                         'type'    => 'organizador',
@@ -457,7 +457,7 @@ class Event_Show_Integrations
             $lugares = array();
         }
 
-?>
+    ?>
         <div class="event-lugar-wrap">
             <p>
                 <label for="event_lugar_id">
@@ -466,10 +466,10 @@ class Event_Show_Integrations
             </p>
             <select name="event_lugar_id" id="event_lugar_id" class="widefat">
                 <option value=""><?php esc_html_e('-- Sin lugar específico --', 'event-show-base'); ?></option>
-                
+
                 <?php if (!empty($establecimientos)) : ?>
                     <optgroup label="<?php esc_attr_e('Establecimientos', 'event-show-base'); ?>">
-                        <?php foreach ($establecimientos as $establecimiento) : 
+                        <?php foreach ($establecimientos as $establecimiento) :
                             $value = 'establecimiento_' . $establecimiento->ID;
                         ?>
                             <option value="<?php echo esc_attr($value); ?>" <?php selected($lugar_value, $value); ?>>
@@ -478,10 +478,10 @@ class Event_Show_Integrations
                         <?php endforeach; ?>
                     </optgroup>
                 <?php endif; ?>
-                
+
                 <?php if (!empty($lugares)) : ?>
                     <optgroup label="<?php esc_attr_e('Lugares', 'event-show-base'); ?>">
-                        <?php foreach ($lugares as $lugar) : 
+                        <?php foreach ($lugares as $lugar) :
                             $value = 'lugar_' . $lugar->term_id;
                         ?>
                             <option value="<?php echo esc_attr($value); ?>" <?php selected($lugar_value, $value); ?>>
@@ -495,29 +495,29 @@ class Event_Show_Integrations
                 <?php esc_html_e('Selecciona dónde se realizará el evento.', 'event-show-base'); ?>
             </p>
 
-            <?php if ($lugar_value) : 
+            <?php if ($lugar_value) :
                 // Determinar tipo y enlace
                 $parts = explode('_', $lugar_value, 2);
                 $tipo = isset($parts[0]) ? $parts[0] : '';
                 $id = isset($parts[1]) ? $parts[1] : '';
                 $edit_link = '';
-                
+
                 if ($tipo === 'establecimiento' && $id) {
                     $edit_link = get_edit_post_link($id);
                 } elseif ($tipo === 'lugar' && $id) {
                     $edit_link = admin_url('term.php?taxonomy=lugar&tag_ID=' . $id);
                 }
-                
+
                 if ($edit_link) :
             ?>
-                <p style="margin-top: 10px;">
-                    <a href="<?php echo esc_url($edit_link); ?>" class="button button-small" target="_blank">
-                        <?php esc_html_e('Ver/Editar Lugar', 'event-show-base'); ?>
-                    </a>
-                </p>
-            <?php 
+                    <p style="margin-top: 10px;">
+                        <a href="<?php echo esc_url($edit_link); ?>" class="button button-small" target="_blank">
+                            <?php esc_html_e('Ver/Editar Lugar', 'event-show-base'); ?>
+                        </a>
+                    </p>
+            <?php
                 endif;
-            endif; 
+            endif;
             ?>
         </div>
 <?php
@@ -644,7 +644,7 @@ class Event_Show_Integrations
                     $direccion = get_term_meta($id, 'direccion', true);
                     $lat = get_term_meta($id, 'latitud', true);
                     $lng = get_term_meta($id, 'longitud', true);
-                    
+
                     $data['lugar'] = array(
                         'id'      => $lugar->term_id,
                         'type'    => 'lugar',

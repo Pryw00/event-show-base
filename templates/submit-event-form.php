@@ -143,9 +143,9 @@ $current_user = wp_get_current_user();
 
         <?php
         // Verificar si la integración con establecimientos está disponible
-        $has_establishments = class_exists('Event_Show_Integrations') && 
-                            Event_Show_Integrations::has_establishments_integration();
-        
+        $has_establishments = class_exists('Event_Show_Integrations') &&
+            Event_Show_Integrations::has_establishments_integration();
+
         if ($has_establishments) :
             // MODO: Establecimientos como organizadores
             // Obtener establecimientos del usuario actual
@@ -232,7 +232,7 @@ $current_user = wp_get_current_user();
                             )
                         ),
                     ));
-                    
+
                     foreach ($organizers as $org) :
                     ?>
                         <option value="<?php echo esc_attr($org->term_id); ?>"><?php echo esc_html($org->name); ?></option>
@@ -244,7 +244,7 @@ $current_user = wp_get_current_user();
                     <?php esc_html_e('Solo puedes usar organizadores que te pertenecen y estén aprobados.', 'event-show-base'); ?>
                     <a href="#" class="create-organizer-link"><?php esc_html_e('Crear nuevo', 'event-show-base'); ?></a>
                 </p>
-                
+
                 <?php if (empty($organizers)) : ?>
                     <div class="alert alert-info" style="padding: 10px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px; margin-top: 10px;">
                         <p style="margin: 0;">

@@ -109,7 +109,7 @@ class Event_Show_Ajax
         add_action('wp_ajax_event_show_create_organizer', array($this, 'create_organizer'));
         add_action('wp_ajax_event_show_create_location', array($this, 'create_location'));
         add_action('wp_ajax_event_show_edit_organizer', array($this, 'edit_organizer'));
-        
+
         // Nuevos AJAX para organizadores (dashboard)
         add_action('wp_ajax_get_organizer_data', array($this, 'get_organizer_data'));
         add_action('wp_ajax_save_organizer', array($this, 'save_organizer'));
@@ -825,7 +825,7 @@ class Event_Show_Ajax
             // Actualizar organizador existente
             // Verificar que el usuario sea el propietario o admin
             $owner_id = get_term_meta($organizer_id, 'owner_id', true);
-            
+
             if (!current_user_can('manage_options') && $owner_id != $current_user_id) {
                 wp_send_json_error(array(
                     'message' => __('No tienes permisos para editar este organizador', 'event-show-base'),
@@ -844,7 +844,7 @@ class Event_Show_Ajax
             }
 
             $term_id = $organizer_id;
-            
+
             // Log de edición
             Event_Show_Logger::log_activity(
                 'organizer_updated',
@@ -865,19 +865,19 @@ class Event_Show_Ajax
             }
 
             $term_id = $result['term_id'];
-            
+
             // Establecer propietario
             update_term_meta($term_id, 'owner_id', $current_user_id);
-            
+
             // Establecer nombre del propietario para referencia
             $current_user = wp_get_current_user();
             update_term_meta($term_id, 'owner_name', $current_user->display_name);
-            
+
             // Estado: pendiente hasta que un admin lo apruebe
             // Solo admins pueden crear organizadores ya aprobados
             $status = current_user_can('manage_options') ? 'approved' : 'pending';
             update_term_meta($term_id, 'status', $status);
-            
+
             // Log de creación
             Event_Show_Logger::log_activity(
                 'organizer_created',
@@ -890,7 +890,7 @@ class Event_Show_Ajax
         // Guardar otros metadatos
         update_term_meta($term_id, 'contact_info', $contact_info);
         update_term_meta($term_id, 'logo', $logo);
-        
+
         // Mensaje de respuesta según si necesita aprobación
         $message = '';
         if ($organizer_id) {
