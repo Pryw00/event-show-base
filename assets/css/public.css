@@ -1375,9 +1375,9 @@ h6,
 
 .organizer-info {
   display: flex;
-  gap: 20px;
-  align-items: center;
+  gap: 0px;
   margin-top: 15px;
+  flex-direction: column;
 }
 
 .organizer-logo {

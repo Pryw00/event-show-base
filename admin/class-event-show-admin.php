@@ -180,14 +180,42 @@ class Event_Show_Admin
         );
 
         // Página de aprobación de organizadores
+        // Contar organizadores pendientes para mostrar badge
+        $pending_count = $this->get_pending_organizers_count();
+        $menu_title = __('Organizadores Pendientes', 'event-show-base');
+        if ($pending_count > 0) {
+            $menu_title .= ' <span class="awaiting-mod update-plugins count-' . $pending_count . '"><span class="pending-count">' . number_format_i18n($pending_count) . '</span></span>';
+        }
+
         add_submenu_page(
             'edit.php?post_type=evento',
             __('Aprobar Organizadores', 'event-show-base'),
-            __('Organizadores Pendientes', 'event-show-base'),
+            $menu_title,
             'manage_options',
             'event-show-approve-organizers',
             array($this, 'render_approve_organizers_page')
         );
+    }
+
+    /**
+     * Obtener cantidad de organizadores pendientes
+     */
+    private function get_pending_organizers_count()
+    {
+        $pending = get_terms(array(
+            'taxonomy' => 'organizador',
+            'hide_empty' => false,
+            'meta_query' => array(
+                array(
+                    'key' => 'status',
+                    'value' => 'pending',
+                    'compare' => '='
+                )
+            ),
+            'fields' => 'count'
+        ));
+
+        return is_numeric($pending) ? $pending : 0;
     }
 
     /**
@@ -658,7 +686,30 @@ class Event_Show_Admin
      */
     public function add_organizador_fields()
     {
+        // Obtener todos los usuarios
+        $users = get_users(array('orderby' => 'display_name'));
     ?>
+        <div class="form-field">
+            <label for="organizador_owner_id"><?php esc_html_e('Usuario Propietario', 'event-show-base'); ?></label>
+            <select name="organizador_owner_id" id="organizador_owner_id" style="width: 95%;">
+                <option value=""><?php esc_html_e('-- Seleccionar Usuario --', 'event-show-base'); ?></option>
+                <?php foreach ($users as $user) : ?>
+                    <option value="<?php echo esc_attr($user->ID); ?>">
+                        <?php echo esc_html($user->display_name); ?> (<?php echo esc_html($user->user_email); ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <p class="description"><?php esc_html_e('Usuario propietario de este organizador', 'event-show-base'); ?></p>
+        </div>
+        <div class="form-field">
+            <label for="organizador_status"><?php esc_html_e('Estado', 'event-show-base'); ?></label>
+            <select name="organizador_status" id="organizador_status">
+                <option value="approved" selected><?php esc_html_e('Aprobado', 'event-show-base'); ?></option>
+                <option value="pending"><?php esc_html_e('Pendiente', 'event-show-base'); ?></option>
+                <option value="rejected"><?php esc_html_e('Rechazado', 'event-show-base'); ?></option>
+            </select>
+            <p class="description"><?php esc_html_e('Los organizadores creados desde backend se aprueban por defecto', 'event-show-base'); ?></p>
+        </div>
         <div class="form-field">
             <label for="organizador_phone"><?php esc_html_e('Teléfono', 'event-show-base'); ?></label>
             <input type="text" name="organizador_phone" id="organizador_phone" value="">
@@ -690,7 +741,44 @@ class Event_Show_Admin
         $website = get_term_meta($term->term_id, 'website', true);
         $image = get_term_meta($term->term_id, 'image', true);
         $image_url = $image ? wp_get_attachment_image_url($image, 'thumbnail') : '';
+        $owner_id = get_term_meta($term->term_id, 'owner_id', true);
+        $status = get_term_meta($term->term_id, 'status', true);
+        if (empty($status)) {
+            $status = 'approved'; // Por defecto aprobado para organizadores antiguos
+        }
+
+        // Obtener todos los usuarios
+        $users = get_users(array('orderby' => 'display_name'));
     ?>
+        <tr class="form-field">
+            <th scope="row">
+                <label for="organizador_owner_id"><?php esc_html_e('Usuario Propietario', 'event-show-base'); ?></label>
+            </th>
+            <td>
+                <select name="organizador_owner_id" id="organizador_owner_id" style="min-width: 300px;">
+                    <option value=""><?php esc_html_e('-- Sin propietario --', 'event-show-base'); ?></option>
+                    <?php foreach ($users as $user) : ?>
+                        <option value="<?php echo esc_attr($user->ID); ?>" <?php selected($owner_id, $user->ID); ?>>
+                            <?php echo esc_html($user->display_name); ?> (<?php echo esc_html($user->user_email); ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="description"><?php esc_html_e('Usuario propietario de este organizador', 'event-show-base'); ?></p>
+            </td>
+        </tr>
+        <tr class="form-field">
+            <th scope="row">
+                <label for="organizador_status"><?php esc_html_e('Estado', 'event-show-base'); ?></label>
+            </th>
+            <td>
+                <select name="organizador_status" id="organizador_status">
+                    <option value="approved" <?php selected($status, 'approved'); ?>><?php esc_html_e('Aprobado', 'event-show-base'); ?></option>
+                    <option value="pending" <?php selected($status, 'pending'); ?>><?php esc_html_e('Pendiente', 'event-show-base'); ?></option>
+                    <option value="rejected" <?php selected($status, 'rejected'); ?>><?php esc_html_e('Rechazado', 'event-show-base'); ?></option>
+                </select>
+                <p class="description"><?php esc_html_e('Estado de aprobación del organizador. Solo los aprobados pueden usarse en eventos.', 'event-show-base'); ?></p>
+            </td>
+        </tr>
         <tr class="form-field">
             <th scope="row">
                 <label for="organizador_phone"><?php esc_html_e('Teléfono', 'event-show-base'); ?></label>
@@ -740,6 +828,37 @@ class Event_Show_Admin
      */
     public function save_organizador_fields($term_id)
     {
+        // Guardar propietario
+        if (isset($_POST['organizador_owner_id'])) {
+            $owner_id = absint($_POST['organizador_owner_id']);
+            if ($owner_id) {
+                update_term_meta($term_id, 'owner_id', $owner_id);
+                // Guardar también el nombre del propietario para referencia
+                $owner = get_user_by('ID', $owner_id);
+                if ($owner) {
+                    update_term_meta($term_id, 'owner_name', $owner->display_name);
+                }
+            } else {
+                delete_term_meta($term_id, 'owner_id');
+                delete_term_meta($term_id, 'owner_name');
+            }
+        }
+
+        // Guardar estado (por defecto 'approved' en backend)
+        if (isset($_POST['organizador_status'])) {
+            $status = sanitize_text_field($_POST['organizador_status']);
+            if (in_array($status, array('approved', 'pending', 'rejected'))) {
+                update_term_meta($term_id, 'status', $status);
+            }
+        } else {
+            // Si es creación nueva desde backend, establecer como aprobado
+            $existing_status = get_term_meta($term_id, 'status', true);
+            if (empty($existing_status)) {
+                update_term_meta($term_id, 'status', 'approved');
+            }
+        }
+
+        // Guardar otros campos
         if (isset($_POST['organizador_phone'])) {
             update_term_meta($term_id, 'phone', sanitize_text_field($_POST['organizador_phone']));
         }
@@ -912,13 +1031,45 @@ class Event_Show_Admin
     {
         global $post;
 
+        // Mostrar alerta de organizadores pendientes solo en páginas del plugin
+        $screen = get_current_screen();
+        if ($screen && (strpos($screen->id, 'evento') !== false || strpos($screen->id, 'event-show') !== false)) {
+            $pending_count = $this->get_pending_organizers_count();
+
+            if ($pending_count > 0 && current_user_can('manage_options')) {
+                $url = admin_url('edit.php?post_type=evento&page=event-show-approve-organizers');
+        ?>
+                <div class="notice notice-warning is-dismissible">
+                    <p>
+                        <strong><?php esc_html_e('Event Show:', 'event-show-base'); ?></strong>
+                        <?php
+                        printf(
+                            _n(
+                                'Hay %s organizador pendiente de aprobación.',
+                                'Hay %s organizadores pendientes de aprobación.',
+                                $pending_count,
+                                'event-show-base'
+                            ),
+                            '<strong>' . number_format_i18n($pending_count) . '</strong>'
+                        );
+                        ?>
+                        <a href="<?php echo esc_url($url); ?>" class="button button-small" style="margin-left: 10px;">
+                            <?php esc_html_e('Revisar ahora', 'event-show-base'); ?>
+                        </a>
+                    </p>
+                </div>
+            <?php
+            }
+        }
+
+        // Validación de eventos
         if (! $post || 'evento' !== get_post_type($post)) {
             return;
         }
 
         $error = get_transient('event_show_validation_error_' . $post->ID);
         if ($error) {
-        ?>
+            ?>
             <div class="notice notice-warning is-dismissible">
                 <p><?php echo esc_html($error); ?></p>
             </div>
@@ -946,11 +1097,11 @@ class Event_Show_Admin
                 $owner_id = get_term_meta($term_id, 'owner_id', true);
 
                 if (class_exists('Event_Show_Logger')) {
-                    Event_Show_Logger::log_activity(
+                    Event_Show_Logger::log(
                         'organizer_' . $action . 'd',
-                        get_current_user_id(),
-                        'Organizador ' . ($action === 'approve' ? 'aprobado' : 'rechazado') . ': ' . $term->name,
-                        array('term_id' => $term_id, 'owner_id' => $owner_id)
+                        'organizador',
+                        $term_id,
+                        'Organizador ' . ($action === 'approve' ? 'aprobado' : 'rechazado') . ': ' . $term->name
                     );
                 }
 

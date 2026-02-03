@@ -790,6 +790,9 @@ class Event_Show_Ajax
             'id' => $term->term_id,
             'name' => $term->name,
             'description' => $term->description,
+            'phone' => get_term_meta($term->term_id, 'phone', true),
+            'email' => get_term_meta($term->term_id, 'email', true),
+            'website' => get_term_meta($term->term_id, 'website', true),
             'contact_info' => get_term_meta($term->term_id, 'contact_info', true),
             'logo' => get_term_meta($term->term_id, 'logo', true),
         ));
@@ -812,8 +815,39 @@ class Event_Show_Ajax
         $organizer_id = isset($_POST['organizer_id']) ? intval($_POST['organizer_id']) : 0;
         $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
         $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+        $website = isset($_POST['website']) ? esc_url_raw($_POST['website']) : '';
         $contact_info = isset($_POST['contact_info']) ? sanitize_text_field($_POST['contact_info']) : '';
         $logo = isset($_POST['logo']) ? esc_url_raw($_POST['logo']) : '';
+
+        // Procesar archivo subido si existe
+        $image_id = '';
+        if (!empty($_FILES['image_file']['name'])) {
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+
+            $file = $_FILES['image_file'];
+            $upload = wp_handle_upload($file, array('test_form' => false));
+
+            if (!isset($upload['error']) && isset($upload['file'])) {
+                $filetype = wp_check_filetype($upload['file'], null);
+                $attachment = array(
+                    'post_mime_type' => $filetype['type'],
+                    'post_title' => sanitize_file_name($file['name']),
+                    'post_content' => '',
+                    'post_status' => 'inherit'
+                );
+                $image_id = wp_insert_attachment($attachment, $upload['file']);
+
+                $attach_data = wp_generate_attachment_metadata($image_id, $upload['file']);
+                wp_update_attachment_metadata($image_id, $attach_data);
+
+                // Usar la URL de la imagen subida
+                $logo = wp_get_attachment_url($image_id);
+            }
+        }
 
         if (empty($name)) {
             wp_send_json_error(array(
@@ -846,11 +880,11 @@ class Event_Show_Ajax
             $term_id = $organizer_id;
 
             // Log de edición
-            Event_Show_Logger::log_activity(
+            Event_Show_Logger::log(
                 'organizer_updated',
-                $current_user_id,
-                'Organizador actualizado: ' . $name,
-                array('term_id' => $term_id)
+                'organizador',
+                $term_id,
+                'Organizador actualizado: ' . $name
             );
         } else {
             // Crear nuevo organizador
@@ -879,17 +913,25 @@ class Event_Show_Ajax
             update_term_meta($term_id, 'status', $status);
 
             // Log de creación
-            Event_Show_Logger::log_activity(
+            Event_Show_Logger::log(
                 'organizer_created',
-                $current_user_id,
-                'Organizador creado: ' . $name . ' (Estado: ' . $status . ')',
-                array('term_id' => $term_id, 'status' => $status)
+                'organizador',
+                $term_id,
+                'Organizador creado: ' . $name . ' (Estado: ' . $status . ')'
             );
         }
 
         // Guardar otros metadatos
+        update_term_meta($term_id, 'phone', $phone);
+        update_term_meta($term_id, 'email', $email);
+        update_term_meta($term_id, 'website', $website);
         update_term_meta($term_id, 'contact_info', $contact_info);
         update_term_meta($term_id, 'logo', $logo);
+
+        // Guardar ID de imagen si se subió una
+        if ($image_id) {
+            update_term_meta($term_id, 'image', $image_id);
+        }
 
         // Mensaje de respuesta según si necesita aprobación
         $message = '';
