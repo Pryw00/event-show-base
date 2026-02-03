@@ -388,47 +388,76 @@ class Event_Show_Admin
                             </p>
                         </td>
                     </tr>
-                    <?php if (class_exists('Access_Control')) : ?>
-                        <tr>
-                            <th scope="row">
-                                <label for="event_show_auto_publish_roles">
-                                    <?php esc_html_e('Roles con Publicación Directa', 'event-show-base'); ?>
-                                </label>
-                            </th>
-                            <td>
-                                <?php
-                                $selected_roles = get_option('event_show_auto_publish_roles', array());
-                                if (!is_array($selected_roles)) {
-                                    $selected_roles = array();
-                                }
-                                // Obtener roles de Access Control
-                                global $wpdb;
-                                $roles_table = $wpdb->prefix . 'ac_roles';
-                                $ac_roles = array();
-                                if ($wpdb->get_var("SHOW TABLES LIKE '$roles_table'") == $roles_table) {
-                                    $ac_roles = $wpdb->get_results("SELECT id, name FROM $roles_table ORDER BY name");
-                                }
-
-                                if (!empty($ac_roles)) :
-                                ?>
-                                    <select name="event_show_auto_publish_roles[]" id="event_show_auto_publish_roles" multiple size="6" style="min-width: 300px;">
-                                        <?php foreach ($ac_roles as $role) : ?>
-                                            <option value="<?php echo esc_attr($role->id); ?>" <?php echo in_array($role->id, $selected_roles) ? 'selected' : ''; ?>>
-                                                <?php echo esc_html($role->name); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <p class="description">
-                                        <?php esc_html_e('Usuarios con estos roles de Access Control pueden publicar eventos directamente sin aprobación. Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples roles.', 'event-show-base'); ?>
-                                    </p>
-                                <?php else : ?>
-                                    <p class="description">
-                                        <?php esc_html_e('No se encontraron roles de Access Control.', 'event-show-base'); ?>
-                                    </p>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endif; ?>
+                    <tr>
+                        <th scope="row">
+                            <label for="event_show_auto_publish_roles">
+                                <?php esc_html_e('Roles con Publicación Directa', 'event-show-base'); ?>
+                            </label>
+                        </th>
+                        <td>
+                            <?php
+                            $selected_roles = get_option('event_show_auto_publish_roles', array());
+                            if (!is_array($selected_roles)) {
+                                $selected_roles = array();
+                            }
+                            
+                            // Obtener todos los roles de WordPress
+                            $all_roles = wp_roles()->roles;
+                            
+                            if (!empty($all_roles)) :
+                            ?>
+                                <select name="event_show_auto_publish_roles[]" id="event_show_auto_publish_roles" multiple size="8" style="min-width: 350px; height: auto;">
+                                    <?php 
+                                    // Separar roles por tipo
+                                    $default_roles = array('administrator', 'editor', 'author', 'contributor', 'subscriber');
+                                    $custom_roles = array();
+                                    
+                                    foreach ($all_roles as $role_slug => $role_info) {
+                                        if (!in_array($role_slug, $default_roles)) {
+                                            $custom_roles[$role_slug] = $role_info;
+                                        }
+                                    }
+                                    
+                                    // Mostrar roles por defecto de WordPress
+                                    if (!empty($default_roles)) : ?>
+                                        <optgroup label="<?php esc_attr_e('Roles de WordPress', 'event-show-base'); ?>">
+                                            <?php foreach ($default_roles as $role_slug) : 
+                                                if (isset($all_roles[$role_slug])) :
+                                                    $role_info = $all_roles[$role_slug];
+                                            ?>
+                                                <option value="<?php echo esc_attr($role_slug); ?>" <?php echo in_array($role_slug, $selected_roles) ? 'selected' : ''; ?>>
+                                                    <?php echo esc_html(translate_user_role($role_info['name'])); ?>
+                                                </option>
+                                            <?php 
+                                                endif;
+                                            endforeach; ?>
+                                        </optgroup>
+                                    <?php endif; 
+                                    
+                                    // Mostrar roles personalizados (incluye los de Access Control)
+                                    if (!empty($custom_roles)) : ?>
+                                        <optgroup label="<?php esc_attr_e('Roles Personalizados', 'event-show-base'); ?>">
+                                            <?php foreach ($custom_roles as $role_slug => $role_info) : ?>
+                                                <option value="<?php echo esc_attr($role_slug); ?>" <?php echo in_array($role_slug, $selected_roles) ? 'selected' : ''; ?>>
+                                                    <?php echo esc_html(translate_user_role($role_info['name'])); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php endif; ?>
+                                </select>
+                                <p class="description">
+                                    <?php esc_html_e('Usuarios con estos roles pueden publicar eventos directamente sin aprobación del administrador. Ejemplo: usuarios con rol "gold" pueden publicar inmediatamente. Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples roles.', 'event-show-base'); ?>
+                                    <br>
+                                    <strong><?php esc_html_e('Nota:', 'event-show-base'); ?></strong> 
+                                    <?php esc_html_e('Esta configuración solo aplica si "Requerir Aprobación" está activada arriba. Los administradores siempre pueden publicar directamente.', 'event-show-base'); ?>
+                                </p>
+                            <?php else : ?>
+                                <p class="description">
+                                    <?php esc_html_e('No se encontraron roles disponibles.', 'event-show-base'); ?>
+                                </p>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
                     <tr>
                         <th scope="row">
                             <label for="event_show_events_per_page">

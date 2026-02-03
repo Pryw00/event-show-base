@@ -272,44 +272,14 @@ class Event_Show_Ajax
             ));
         }
 
-        // Determinar el estado del post según configuración y rol del usuario
-        $post_status = 'pending'; // Por defecto pendiente
-        $current_user_id = get_current_user_id();
-        $require_approval = get_option('event_show_require_approval', true);
+        // Determinar el estado del post
+        // El filtro 'wp_insert_post_data' en Event_Show_Integrations::auto_publish_by_role()
+        // se encargará de cambiar automáticamente a 'publish' si el usuario tiene permisos
+        $post_status = 'pending'; // Por defecto pendiente, será modificado por el filtro si aplica
 
-        // Si es administrador, publicar directamente
+        // Administradores siempre publican directamente
         if (current_user_can('manage_options')) {
             $post_status = 'publish';
-        }
-        // Si no requiere aprobación general, publicar directamente
-        elseif (!$require_approval) {
-            $post_status = 'publish';
-        }
-        // Verificar si el usuario tiene un rol de Access Control con permiso de publicación directa
-        elseif (class_exists('Access_Control')) {
-            $auto_publish_roles = get_option('event_show_auto_publish_roles', array());
-            if (!is_array($auto_publish_roles)) {
-                $auto_publish_roles = array();
-            }
-
-            if (!empty($auto_publish_roles)) {
-                global $wpdb;
-                $user_roles_table = $wpdb->prefix . 'ac_user_roles';
-
-                // Verificar si el usuario tiene alguno de los roles configurados
-                $user_roles = $wpdb->get_col($wpdb->prepare(
-                    "SELECT role_id FROM $user_roles_table WHERE user_id = %d",
-                    $current_user_id
-                ));
-
-                // Si el usuario tiene algún rol que permite publicación directa
-                foreach ($user_roles as $role_id) {
-                    if (in_array($role_id, $auto_publish_roles)) {
-                        $post_status = 'publish';
-                        break;
-                    }
-                }
-            }
         }
 
         // Crear el evento
@@ -328,6 +298,10 @@ class Event_Show_Ajax
                 'message' => __('Error al crear el evento', 'event-show-base'),
             ));
         }
+
+        // Obtener el estado final del post (puede haber sido modificado por filtros)
+        $final_post = get_post($event_id);
+        $final_status = $final_post->post_status;
 
         // Guardar metadatos
         update_post_meta($event_id, '_event_date', $event_date);
@@ -380,11 +354,11 @@ class Event_Show_Ajax
             'event_submitted',
             'evento',
             $event_id,
-            sprintf(__('Evento "%s" enviado por usuario', 'event-show-base'), $title)
+            sprintf(__('Evento "%s" enviado por usuario (estado final: %s)', 'event-show-base'), $title, $final_status)
         );
 
-        // Mensaje según el estado del evento
-        if ($post_status === 'publish') {
+        // Mensaje según el estado final del evento
+        if ($final_status === 'publish') {
             $success_message = __('¡Evento publicado correctamente! Ya está visible para todos.', 'event-show-base');
         } else {
             $success_message = __('¡Evento enviado correctamente! Será revisado por un administrador antes de publicarse.', 'event-show-base');
@@ -392,7 +366,8 @@ class Event_Show_Ajax
 
         wp_send_json_success(array(
             'message' => $success_message,
-            'published' => $post_status === 'publish',
+            'published' => $final_status === 'publish',
+            'event_id' => $event_id,
         ));
     }
 
