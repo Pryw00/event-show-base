@@ -392,60 +392,8 @@
    * Inicializar formulario de envío de eventos
    */
   function initSubmitEventForm() {
-    $("#event-submit-form").on("submit", function (e) {
-      e.preventDefault();
-
-      var $form = $(this);
-      var $btn = $form.find(".event-submit-btn");
-      var $messages = $form.find(".form-messages");
-
-      $btn.prop("disabled", true);
-      $btn.find(".btn-text").hide();
-      $btn.find(".btn-loading").show();
-
-      var formData = $form.serialize();
-
-      $.ajax({
-        url: eventShowData.ajaxUrl,
-        type: "POST",
-        data: formData,
-        success: function (response) {
-          if (response.success) {
-            $messages
-              .removeClass("error")
-              .addClass("success")
-              .html(response.data.message)
-              .show();
-            $form[0].reset();
-          } else {
-            $messages
-              .removeClass("success")
-              .addClass("error")
-              .html(response.data.message)
-              .show();
-          }
-        },
-        error: function () {
-          $messages
-            .removeClass("success")
-            .addClass("error")
-            .html(eventShowData.i18n.error)
-            .show();
-        },
-        complete: function () {
-          $btn.prop("disabled", false);
-          $btn.find(".btn-text").show();
-          $btn.find(".btn-loading").hide();
-
-          $("html, body").animate(
-            {
-              scrollTop: $messages.offset().top - 100,
-            },
-            500,
-          );
-        },
-      });
-    });
+    // Esta función se implementa en initRegistrationForm más arriba
+    // que maneja correctamente FormData para archivos
   }
 
   /**

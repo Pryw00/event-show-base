@@ -23,6 +23,7 @@ class Event_Show_Metaboxes
     public function __construct()
     {
         add_action('add_meta_boxes', array($this, 'add_metaboxes'));
+        add_action('add_meta_boxes', array($this, 'remove_taxonomy_metaboxes'), 999);
         add_action('save_post_evento', array($this, 'save_metabox_data'), 10, 2);
     }
 
@@ -72,6 +73,20 @@ class Event_Show_Metaboxes
                 'default'
             );
         }
+    }
+
+    /**
+     * Eliminar metaboxes de taxonomías
+     * WordPress agrega automáticamente metaboxes para las taxonomías, 
+     * pero solo queremos usar los selectores dropdown personalizados
+     */
+    public function remove_taxonomy_metaboxes()
+    {
+        // Eliminar metabox de la taxonomía 'organizador'
+        remove_meta_box('tagsdiv-organizador', 'evento', 'side');
+
+        // Eliminar metabox de la taxonomía 'lugar'
+        remove_meta_box('tagsdiv-lugar', 'evento', 'side');
     }
 
     /**

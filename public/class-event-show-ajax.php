@@ -197,6 +197,8 @@ class Event_Show_Ajax
             ));
         }
 
+        $current_user_id = get_current_user_id();
+
         // Recoger datos del formulario
         $title = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : '';
         $description = isset($_POST['description']) ? wp_kses_post($_POST['description']) : '';
@@ -207,6 +209,7 @@ class Event_Show_Ajax
         $category = isset($_POST['category']) ? absint($_POST['category']) : 0;
         $age_rating = isset($_POST['age_rating']) ? absint($_POST['age_rating']) : 0;
         $organizer_id = isset($_POST['organizer_id']) ? absint($_POST['organizer_id']) : 0;
+        $organizer = isset($_POST['organizer']) ? absint($_POST['organizer']) : 0;
         $location = isset($_POST['location']) ? absint($_POST['location']) : 0;
 
         // Procesar imágenes obligatorias
@@ -311,7 +314,7 @@ class Event_Show_Ajax
         update_post_meta($event_id, '_event_banner', $banner_id);
         update_post_meta($event_id, '_event_thumbnail', $thumb_id);
         update_post_meta($event_id, '_use_default_template', '1');
-        update_post_meta($event_id, '_enable_registration', '1');
+        update_post_meta($event_id, '_enable_registration', '0');
 
         // Asignar taxonomías
         if ($category) {
@@ -321,17 +324,20 @@ class Event_Show_Ajax
             wp_set_post_terms($event_id, array($age_rating), 'clasificacion_edad');
         }
 
-        // Asignar establecimiento organizador y validar propiedad
+        // Asignar organizador
+        // Puede venir como organizer_id (establecimiento) o como organizer (taxonomía)
         if ($organizer_id) {
+            // Modo: Establecimiento como organizador
             $establecimiento = get_post($organizer_id);
 
             // Verificar que sea un establecimiento válido
             if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
-                $current_user_id = get_current_user_id();
-
                 // Verificar que el usuario sea propietario (excepto administradores)
                 if (current_user_can('manage_options') || (int)$establecimiento->post_author === $current_user_id) {
-                    update_post_meta($event_id, '_event_organizer_id', $organizer_id);
+                    // Guardar en formato del metabox híbrido
+                    update_post_meta($event_id, '_event_organizer_id', 'establecimiento_' . $organizer_id);
+                    update_post_meta($event_id, '_event_organizer_type', 'establecimiento');
+                    update_post_meta($event_id, '_event_organizer_ref_id', $organizer_id);
                 } else {
                     // Usuario intentó asignar un establecimiento que no le pertenece
                     wp_delete_post($event_id, true);
@@ -340,10 +346,20 @@ class Event_Show_Ajax
                     ));
                 }
             }
+        } elseif ($organizer) {
+            // Modo: Taxonomía organizador (fallback)
+            // Guardar en formato del metabox híbrido
+            update_post_meta($event_id, '_event_organizer_id', 'organizador_' . $organizer);
+            update_post_meta($event_id, '_event_organizer_type', 'organizador');
+            update_post_meta($event_id, '_event_organizer_ref_id', $organizer);
         }
 
+        // Asignar lugar
         if ($location) {
-            wp_set_post_terms($event_id, array($location), 'lugar');
+            // Guardar en formato del metabox híbrido
+            update_post_meta($event_id, '_event_lugar_id', 'lugar_' . $location);
+            update_post_meta($event_id, '_event_lugar_type', 'lugar');
+            update_post_meta($event_id, '_event_lugar_ref_id', $location);
         }
 
         // Enviar notificación al admin
