@@ -237,6 +237,7 @@ class Event_Show_Admin
         register_setting('event_show_settings', 'event_show_admin_email');
         register_setting('event_show_settings', 'event_show_min_days_advance');
         register_setting('event_show_settings', 'event_show_require_approval');
+        register_setting('event_show_settings', 'event_show_auto_publish_roles');
         register_setting('event_show_settings', 'event_show_default_organizer');
         register_setting('event_show_settings', 'event_show_events_per_page');
         register_setting('event_show_settings', 'event_show_date_format');
@@ -387,6 +388,47 @@ class Event_Show_Admin
                             </p>
                         </td>
                     </tr>
+                    <?php if (class_exists('Access_Control')) : ?>
+                        <tr>
+                            <th scope="row">
+                                <label for="event_show_auto_publish_roles">
+                                    <?php esc_html_e('Roles con Publicación Directa', 'event-show-base'); ?>
+                                </label>
+                            </th>
+                            <td>
+                                <?php
+                                $selected_roles = get_option('event_show_auto_publish_roles', array());
+                                if (!is_array($selected_roles)) {
+                                    $selected_roles = array();
+                                }
+                                // Obtener roles de Access Control
+                                global $wpdb;
+                                $roles_table = $wpdb->prefix . 'ac_roles';
+                                $ac_roles = array();
+                                if ($wpdb->get_var("SHOW TABLES LIKE '$roles_table'") == $roles_table) {
+                                    $ac_roles = $wpdb->get_results("SELECT id, name FROM $roles_table ORDER BY name");
+                                }
+
+                                if (!empty($ac_roles)) :
+                                ?>
+                                    <select name="event_show_auto_publish_roles[]" id="event_show_auto_publish_roles" multiple size="6" style="min-width: 300px;">
+                                        <?php foreach ($ac_roles as $role) : ?>
+                                            <option value="<?php echo esc_attr($role->id); ?>" <?php echo in_array($role->id, $selected_roles) ? 'selected' : ''; ?>>
+                                                <?php echo esc_html($role->name); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description">
+                                        <?php esc_html_e('Usuarios con estos roles de Access Control pueden publicar eventos directamente sin aprobación. Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples roles.', 'event-show-base'); ?>
+                                    </p>
+                                <?php else : ?>
+                                    <p class="description">
+                                        <?php esc_html_e('No se encontraron roles de Access Control.', 'event-show-base'); ?>
+                                    </p>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
                     <tr>
                         <th scope="row">
                             <label for="event_show_events_per_page">

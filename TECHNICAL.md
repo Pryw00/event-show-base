@@ -596,6 +596,93 @@ zip -r event-show-base.zip event-show-base/ -x "*.git*" "node_modules/*" "tests/
 3. Verificar conflictos con el tema
 4. Inspeccionar especificidad CSS
 
+## Integraciones con Plugins de Terceros
+
+### Access Control Integration
+
+Event Show se integra con el plugin **Access Control** para gestionar permisos avanzados de publicación de eventos.
+
+#### Configuración de Roles con Publicación Directa
+
+Los administradores pueden configurar qué roles de Access Control tienen permiso para publicar eventos directamente sin aprobación:
+
+```php
+// La configuración se almacena en:
+$auto_publish_roles = get_option('event_show_auto_publish_roles', array());
+```
+
+#### Flujo de Aprobación de Eventos
+
+El sistema determina el estado del evento (`post_status`) según estas reglas (en orden de prioridad):
+
+1. **Administradores** (`current_user_can('manage_options')`): Siempre publican directamente → `'publish'`
+
+2. **Aprobación desactivada globalmente** (`event_show_require_approval` = false): Todos publican directamente → `'publish'`
+
+3. **Roles de Access Control configurados**: Si el usuario tiene un rol configurado en `event_show_auto_publish_roles` → `'publish'`
+
+4. **Por defecto**: Requiere aprobación → `'pending'`
+
+#### Implementación Técnica
+
+```php
+// En class-event-show-ajax.php, método submit_event()
+
+// Verificar roles de Access Control
+if (class_exists('Access_Control')) {
+    $auto_publish_roles = get_option('event_show_auto_publish_roles', array());
+
+    if (!empty($auto_publish_roles)) {
+        global $wpdb;
+        $user_roles_table = $wpdb->prefix . 'ac_user_roles';
+
+        // Obtener roles del usuario
+        $user_roles = $wpdb->get_col($wpdb->prepare(
+            "SELECT role_id FROM $user_roles_table WHERE user_id = %d",
+            $current_user_id
+        ));
+
+        // Verificar si tiene algún rol con permiso
+        foreach ($user_roles as $role_id) {
+            if (in_array($role_id, $auto_publish_roles)) {
+                $post_status = 'publish';
+                break;
+            }
+        }
+    }
+}
+```
+
+#### Tablas de Access Control Utilizadas
+
+- `wp_ac_roles`: Contiene los roles personalizados
+  - `id`: ID del rol
+  - `name`: Nombre del rol
+
+- `wp_ac_user_roles`: Relación usuario-rol
+  - `user_id`: ID del usuario de WordPress
+  - `role_id`: ID del rol de Access Control
+
+#### Configuración en el Admin
+
+En **Eventos > Configuración**, si Access Control está activo, aparece un campo de selección múltiple:
+
+```php
+// Campo solo visible si Access Control está instalado
+<?php if (class_exists('Access_Control')) : ?>
+    <select name="event_show_auto_publish_roles[]" multiple>
+        // Opciones cargadas desde wp_ac_roles
+    </select>
+<?php endif; ?>
+```
+
+#### Notas Importantes
+
+- La integración es **opcional** - el plugin funciona sin Access Control
+- Si Access Control está desactivado, solo aplican las reglas 1, 2 y 4
+- Los eventos publicados automáticamente aparecen inmediatamente en el sitio
+- Los eventos pendientes deben ser aprobados desde el admin de WordPress
+
 ## Recursos Adicionales
 
 - [WordPress Plugin Handbook](https://developer.wordpress.org/plugins/)

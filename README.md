@@ -49,6 +49,23 @@ Event Show es un plugin completo para WordPress que permite crear, gestionar y p
 - Integración con Google Calendar
 - Schema.org para SEO
 - Botones de compartir en redes sociales
+- **Access Control**: Configuración de roles con publicación directa de eventos
+
+#### Integración con Access Control
+
+Si tienes instalado el plugin **Access Control**, puedes configurar qué roles de usuarios tienen permiso para publicar eventos directamente sin necesidad de aprobación del administrador.
+
+**Configuración:**
+
+1. Ve a "Eventos > Configuración"
+2. En la sección "Roles con Publicación Directa" selecciona los roles de Access Control que podrán publicar eventos automáticamente
+3. Los usuarios con estos roles verán sus eventos publicados inmediatamente al enviarlos desde el formulario frontend
+
+**Notas importantes:**
+
+- Los administradores siempre pueden publicar directamente
+- Si "Requerir Aprobación" está desactivado, todos los usuarios pueden publicar directamente
+- Esta configuración solo afecta eventos enviados desde el formulario frontend
 
 ### Panel de Usuario
 
