@@ -28,21 +28,15 @@ $autoplay_speed = isset($atts['autoplay_speed']) ? intval($atts['autoplay_speed'
                     $event_date = get_post_meta($event_id, '_event_date', true);
                     $event_time = get_post_meta($event_id, '_event_time', true);
                     $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
-                    $lugares = wp_get_post_terms($event_id, 'lugar');
+                    $lugar = Event_Show_Helpers::get_event_location($event_id);
                     $categorias = wp_get_post_terms($event_id, 'categoria_evento');
                 ?>
                     <div class="slider-info-item<?php echo $first ? ' active' : ''; ?>" data-slide-info="<?php echo esc_attr($event_id); ?>">
-                        <?php if (! empty($categorias)) : ?>
-                            <span class="slider-category"><?php echo esc_html($categorias[0]->name); ?></span>
-                        <?php endif; ?>
-
-                        <h2 class="slider-title"><?php the_title(); ?></h2>
-
-                        <div class="slider-meta">
+                        <div class="slider-meta-top">
                             <?php if ($event_date) : ?>
                                 <span class="slider-date">
                                     <span class="dashicons dashicons-calendar-alt"></span>
-                                    <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'd M Y')); ?>
+                                    <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'l, d M Y')); ?>
                                 </span>
                             <?php endif; ?>
                             <?php if ($event_time && $event_time_indef !== '1') : ?>
@@ -52,11 +46,37 @@ $autoplay_speed = isset($atts['autoplay_speed']) ? intval($atts['autoplay_speed'
                                 </span>
                             <?php endif; ?>
                         </div>
+                        <h2 class="slider-title"><?php the_title(); ?></h2>
 
-                        <?php if (! empty($lugares)) : ?>
-                            <p class="slider-location">
-                                <span class="dashicons dashicons-location"></span>
-                                <?php echo esc_html($lugares[0]->name); ?>
+                        <div class="slider-meta">
+                            <?php if (! empty($categorias)) : ?>
+                                <span class="slider-category">
+                                    <span class="dashicons dashicons-tag"></span>
+                                    <?php echo esc_html($categorias[0]->name); ?>
+                                </span>
+                            <?php endif; ?>
+                            <?php if ($lugar) : ?>
+                                <p class="slider-location">
+                                    <span class="dashicons dashicons-location"></span>
+                                    <?php echo esc_html($lugar['name']); ?>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php
+                        $description = get_the_excerpt();
+                        if (empty($description)) {
+                            $description = get_the_content();
+                        }
+                        $description = wp_strip_all_tags($description);
+                        $description = substr($description, 0, 100);
+                        if (strlen(get_the_excerpt()) > 100 || strlen(get_the_content()) > 100) {
+                            $description .= '...';
+                        }
+                        if (!empty($description)) : ?>
+                            <p class="slider-description">
+                                <span class="dashicons dashicons-align-left"></span>
+                                <?php echo esc_html($description); ?>
                             </p>
                         <?php endif; ?>
 

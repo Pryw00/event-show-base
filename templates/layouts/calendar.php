@@ -49,7 +49,7 @@
                             $event_date = get_post_meta($event_id, '_event_date', true);
                             $event_time = get_post_meta($event_id, '_event_time', true);
                             $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
-                            $lugares = wp_get_post_terms($event_id, 'lugar');
+                            $lugar = Event_Show_Helpers::get_event_location($event_id);
 
                             $day = date_i18n('d', strtotime(str_replace('/', '-', $event_date)));
                             $day_name = date_i18n('D', strtotime(str_replace('/', '-', $event_date)));
@@ -64,8 +64,8 @@
                                     <?php if ($event_time && $event_time_indef !== '1') : ?>
                                         <p class="event-time"><?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?></p>
                                     <?php endif; ?>
-                                    <?php if (! empty($lugares)) : ?>
-                                        <p class="event-location"><span class="dashicons dashicons-location"></span> <?php echo esc_html($lugares[0]->name); ?></p>
+                                    <?php if ($lugar) : ?>
+                                        <p class="event-location"><span class="dashicons dashicons-location"></span> <?php echo esc_html($lugar['name']); ?></p>
                                     <?php endif; ?>
                                 </div>
                             </div>

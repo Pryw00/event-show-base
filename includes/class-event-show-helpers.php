@@ -154,8 +154,8 @@ class Event_Show_Helpers
         );
 
         // Obtener lugar
-        $lugares = wp_get_post_terms($event_id, 'lugar');
-        $location = ! empty($lugares) ? $lugares[0]->name : '';
+        $lugar = self::get_event_location($event_id);
+        $location = $lugar ? $lugar['name'] : '';
 
         $ical = "BEGIN:VCALENDAR\r\n";
         $ical .= "VERSION:2.0\r\n";
@@ -225,8 +225,8 @@ class Event_Show_Helpers
         );
 
         // Obtener lugar
-        $lugares = wp_get_post_terms($event_id, 'lugar');
-        $location = ! empty($lugares) ? $lugares[0]->name : '';
+        $lugar = self::get_event_location($event_id);
+        $location = $lugar ? $lugar['name'] : '';
 
         $params = array(
             'action' => 'TEMPLATE',
@@ -315,5 +315,120 @@ class Event_Show_Helpers
         }
 
         return $atts;
+    }
+
+    /**
+     * Obtener información del organizador de un evento
+     * Compatible con establecimientos (si hay integración) y taxonomías
+     *
+     * @param int $event_id ID del evento
+     * @return array|null Array con datos del organizador o null si no hay
+     */
+    public static function get_event_organizer($event_id)
+    {
+        // Primero verificar si hay un organizador asignado (formato nuevo con integración)
+        $organizer_value = get_post_meta($event_id, '_event_organizer_id', true);
+
+        if ($organizer_value) {
+            // Parsear el formato tipo_id
+            $parts = explode('_', $organizer_value, 2);
+            $tipo = isset($parts[0]) ? $parts[0] : '';
+            $id = isset($parts[1]) ? intval($parts[1]) : 0;
+
+            if ($tipo === 'establecimiento' && $id) {
+                $establecimiento = get_post($id);
+                if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
+                    return array(
+                        'id' => $establecimiento->ID,
+                        'name' => $establecimiento->post_title,
+                        'type' => 'establecimiento',
+                        'url' => get_permalink($establecimiento->ID),
+                        'logo' => get_the_post_thumbnail_url($establecimiento->ID, 'thumbnail'),
+                    );
+                }
+            } elseif ($tipo === 'organizador' && $id) {
+                $organizador = get_term($id, 'organizador');
+                if ($organizador && !is_wp_error($organizador)) {
+                    return array(
+                        'id' => $organizador->term_id,
+                        'name' => $organizador->name,
+                        'type' => 'organizador',
+                        'url' => get_term_link($organizador),
+                        'logo' => get_term_meta($id, 'logo', true),
+                    );
+                }
+            }
+        }
+
+        // Fallback: buscar en taxonomía organizador (compatibilidad con versiones antiguas)
+        $organizadores = wp_get_post_terms($event_id, 'organizador');
+        if (!empty($organizadores) && !is_wp_error($organizadores)) {
+            $organizador = $organizadores[0];
+            return array(
+                'id' => $organizador->term_id,
+                'name' => $organizador->name,
+                'type' => 'organizador',
+                'url' => get_term_link($organizador),
+                'logo' => get_term_meta($organizador->term_id, 'logo', true),
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtener información del lugar de un evento
+     * Compatible con establecimientos (si hay integración) y taxonomías
+     *
+     * @param int $event_id ID del evento
+     * @return array|null Array con datos del lugar o null si no hay
+     */
+    public static function get_event_location($event_id)
+    {
+        // Primero verificar si hay un lugar asignado (formato nuevo con integración)
+        $lugar_value = get_post_meta($event_id, '_event_lugar_id', true);
+
+        if ($lugar_value) {
+            // Parsear el formato tipo_id
+            $parts = explode('_', $lugar_value, 2);
+            $tipo = isset($parts[0]) ? $parts[0] : '';
+            $id = isset($parts[1]) ? intval($parts[1]) : 0;
+
+            if ($tipo === 'establecimiento' && $id) {
+                $establecimiento = get_post($id);
+                if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
+                    return array(
+                        'id' => $establecimiento->ID,
+                        'name' => $establecimiento->post_title,
+                        'type' => 'establecimiento',
+                        'url' => get_permalink($establecimiento->ID),
+                    );
+                }
+            } elseif ($tipo === 'lugar' && $id) {
+                $lugar = get_term($id, 'lugar');
+                if ($lugar && !is_wp_error($lugar)) {
+                    return array(
+                        'id' => $lugar->term_id,
+                        'name' => $lugar->name,
+                        'type' => 'lugar',
+                        'url' => get_term_link($lugar),
+                    );
+                }
+            }
+        }
+
+        // Fallback: buscar en taxonomía lugar (compatibilidad con versiones antiguas)
+        $lugares = wp_get_post_terms($event_id, 'lugar');
+        if (!empty($lugares) && !is_wp_error($lugares)) {
+            $lugar = $lugares[0];
+            return array(
+                'id' => $lugar->term_id,
+                'name' => $lugar->name,
+                'type' => 'lugar',
+                'url' => get_term_link($lugar),
+            );
+        }
+
+        return null;
     }
 }

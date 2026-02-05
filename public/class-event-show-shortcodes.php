@@ -318,7 +318,7 @@ class Event_Show_Shortcodes
         // Verificar si el registro está habilitado
         $enable_registration = get_post_meta($event_id, '_enable_registration', true);
         if ('0' === $enable_registration) {
-            // Obtener organizador - Priorizar metadatos sobre taxonomía (igual que single-evento.php)
+            // Obtener organizador usando helper
             $organizador = null;
             $organizador_name = '';
             $organizador_email = '';
@@ -329,17 +329,13 @@ class Event_Show_Shortcodes
             $organizador_instagram = '';
             $organizador_twitter = '';
 
-            $organizer_value = get_post_meta($event_id, '_event_organizer_id', true);
-            if ($organizer_value) {
-                // Parsear el formato tipo_id
-                $parts = explode('_', $organizer_value, 2);
-                $tipo = isset($parts[0]) ? $parts[0] : '';
-                $id = isset($parts[1]) ? intval($parts[1]) : 0;
+            $organizador_data = Event_Show_Helpers::get_event_organizer($event_id);
+            if ($organizador_data) {
+                $organizador_name = $organizador_data['name'];
 
-                if ($tipo === 'establecimiento' && $id && post_type_exists('establecimiento')) {
-                    $establecimiento = get_post($id);
-                    if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
-                        $organizador_name = $establecimiento->post_title;
+                if ($organizador_data['type'] === 'establecimiento') {
+                    $establecimiento = get_post($organizador_data['id']);
+                    if ($establecimiento) {
                         $organizador_image = get_post_thumbnail_id($establecimiento->ID);
                         $organizador_phone = get_post_meta($establecimiento->ID, '_scl_telefono', true);
                         $organizador_email = get_post_meta($establecimiento->ID, '_scl_email', true);
@@ -354,35 +350,19 @@ class Event_Show_Shortcodes
                             'type' => 'establecimiento'
                         );
                     }
-                } elseif ($tipo === 'organizador' && $id) {
-                    $organizador_term = get_term($id, 'organizador');
+                } elseif ($organizador_data['type'] === 'organizador') {
+                    $organizador_term = get_term($organizador_data['id'], 'organizador');
                     if ($organizador_term && !is_wp_error($organizador_term)) {
                         $organizador = $organizador_term;
                         $organizador_name = $organizador_term->name;
-                        $organizador_image = get_term_meta($organizador_term->term_id, 'image', true);
-                        $organizador_phone = get_term_meta($organizador_term->term_id, 'phone', true);
                         $organizador_email = get_term_meta($organizador_term->term_id, 'email', true);
+                        $organizador_phone = get_term_meta($organizador_term->term_id, 'phone', true);
+                        $organizador_image = get_term_meta($organizador_term->term_id, 'image', true);
                         $organizador_website = get_term_meta($organizador_term->term_id, 'website', true);
                         $organizador_facebook = get_term_meta($organizador_term->term_id, 'facebook', true);
                         $organizador_instagram = get_term_meta($organizador_term->term_id, 'instagram', true);
                         $organizador_twitter = get_term_meta($organizador_term->term_id, 'twitter', true);
                     }
-                }
-            }
-
-            // Fallback: usar taxonomía si no hay metadatos
-            if (!$organizador) {
-                $organizadores = wp_get_post_terms($event_id, 'organizador', array('number' => 1));
-                $organizador = !empty($organizadores) ? $organizadores[0] : null;
-                if ($organizador) {
-                    $organizador_name = $organizador->name;
-                    $organizador_email = get_term_meta($organizador->term_id, 'email', true);
-                    $organizador_phone = get_term_meta($organizador->term_id, 'phone', true);
-                    $organizador_image = get_term_meta($organizador->term_id, 'image', true);
-                    $organizador_website = get_term_meta($organizador->term_id, 'website', true);
-                    $organizador_facebook = get_term_meta($organizador->term_id, 'facebook', true);
-                    $organizador_instagram = get_term_meta($organizador->term_id, 'instagram', true);
-                    $organizador_twitter = get_term_meta($organizador->term_id, 'twitter', true);
                 }
             }
 

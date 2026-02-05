@@ -24,8 +24,8 @@ $show_countdown = isset($atts['show_countdown']) && 'yes' === $atts['show_countd
                     $thumbnail_id = get_post_meta($event_id, '_event_thumbnail', true);
                     $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'large') : get_the_post_thumbnail_url($event_id, 'large');
 
-                    $lugares = wp_get_post_terms($event_id, 'lugar');
-                    $organizadores = wp_get_post_terms($event_id, 'organizador');
+                    $organizador = Event_Show_Helpers::get_event_organizer($event_id);
+                    $lugar = Event_Show_Helpers::get_event_location($event_id);
 
                     // Countdown
                     $countdown = $show_countdown ? Event_Show_Helpers::get_countdown($event_id) : null;
@@ -50,14 +50,14 @@ $show_countdown = isset($atts['show_countdown']) && 'yes' === $atts['show_countd
                                 <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
                             </h3>
 
-                            <?php if (! empty($organizadores)) : ?>
-                                <p class="slide-organizer"><?php echo esc_html($organizadores[0]->name); ?></p>
+                            <?php if ($organizador) : ?>
+                                <p class="slide-organizer"><?php echo esc_html($organizador['name']); ?></p>
                             <?php endif; ?>
 
-                            <?php if (! empty($lugares)) : ?>
+                            <?php if ($lugar) : ?>
                                 <p class="slide-location">
                                     <span class="dashicons dashicons-location"></span>
-                                    <?php echo esc_html($lugares[0]->name); ?>
+                                    <?php echo esc_html($lugar['name']); ?>
                                 </p>
                             <?php endif; ?>
 

@@ -73,20 +73,18 @@ class Event_Show_Admin_Columns
                 break;
 
             case 'event_location':
-                $lugares = wp_get_post_terms($post_id, 'lugar');
-                if (! empty($lugares) && ! is_wp_error($lugares)) {
-                    $names = wp_list_pluck($lugares, 'name');
-                    echo esc_html(implode(', ', $names));
+                $lugar = Event_Show_Helpers::get_event_location($post_id);
+                if ($lugar) {
+                    echo esc_html($lugar['name']);
                 } else {
                     echo '-';
                 }
                 break;
 
             case 'event_organizer':
-                $organizadores = wp_get_post_terms($post_id, 'organizador');
-                if (! empty($organizadores) && ! is_wp_error($organizadores)) {
-                    $names = wp_list_pluck($organizadores, 'name');
-                    echo esc_html(implode(', ', $names));
+                $organizador = Event_Show_Helpers::get_event_organizer($post_id);
+                if ($organizador) {
+                    echo esc_html($organizador['name']);
                 } else {
                     echo '-';
                 }

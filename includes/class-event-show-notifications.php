@@ -57,8 +57,8 @@ class Event_Show_Notifications
         $event_date = get_post_meta($event_id, '_event_date', true);
         $event_time = get_post_meta($event_id, '_event_time', true);
         $event_link = get_permalink($event_id);
-        $lugares = wp_get_post_terms($event_id, 'lugar');
-        $lugar_nombre = ! empty($lugares) ? $lugares[0]->name : '';
+        $lugar = Event_Show_Helpers::get_event_location($event_id);
+        $lugar_nombre = $lugar ? $lugar['name'] : '';
         $categorias = wp_get_post_terms($event_id, 'categoria_evento');
         $categoria_nombre = ! empty($categorias) ? $categorias[0]->name : '';
         $clasificaciones = wp_get_post_terms($event_id, 'clasificacion_edad');
@@ -128,8 +128,8 @@ class Event_Show_Notifications
         $event_link = get_permalink($event_id);
 
         // Obtener lugar
-        $lugares = wp_get_post_terms($event_id, 'lugar');
-        $lugar_nombre = ! empty($lugares) ? $lugares[0]->name : '';
+        $lugar = Event_Show_Helpers::get_event_location($event_id);
+        $lugar_nombre = $lugar ? $lugar['name'] : '';
 
         $subject = sprintf(__('¡Confirmación de registro para %s!', 'event-show-base'), $event->post_title);
         $headers = array('Content-Type: text/html; charset=UTF-8');
@@ -229,8 +229,8 @@ class Event_Show_Notifications
         $event_link = get_permalink($event_id);
 
         // Obtener lugar
-        $lugares = wp_get_post_terms($event_id, 'lugar');
-        $lugar_nombre = ! empty($lugares) ? $lugares[0]->name : '';
+        $lugar = Event_Show_Helpers::get_event_location($event_id);
+        $lugar_nombre = $lugar ? $lugar['name'] : '';
 
         $subject = sprintf(__('Recordatorio: %s es mañana', 'event-show-base'), $event->post_title);
         $headers = array('Content-Type: text/html; charset=UTF-8');

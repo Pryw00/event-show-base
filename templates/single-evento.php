@@ -37,17 +37,24 @@ $organizador_facebook = '';
 $organizador_instagram = '';
 $organizador_twitter = '';
 
-$organizer_value = get_post_meta($event_id, '_event_organizer_id', true);
-if ($organizer_value) {
-    // Parsear el formato tipo_id
-    $parts = explode('_', $organizer_value, 2);
-    $tipo = isset($parts[0]) ? $parts[0] : '';
-    $id = isset($parts[1]) ? intval($parts[1]) : 0;
+// Datos del organizador
+$organizador = null;
+$organizador_name = '';
+$organizador_image = '';
+$organizador_phone = '';
+$organizador_email = '';
+$organizador_website = '';
+$organizador_facebook = '';
+$organizador_instagram = '';
+$organizador_twitter = '';
 
-    if ($tipo === 'establecimiento' && $id && post_type_exists('establecimiento')) {
-        $establecimiento = get_post($id);
-        if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
-            $organizador_name = $establecimiento->post_title;
+$organizador_data = Event_Show_Helpers::get_event_organizer($event_id);
+if ($organizador_data) {
+    $organizador_name = $organizador_data['name'];
+
+    if ($organizador_data['type'] === 'establecimiento') {
+        $establecimiento = get_post($organizador_data['id']);
+        if ($establecimiento) {
             $organizador_image = get_post_thumbnail_id($establecimiento->ID);
             $organizador_phone = get_post_meta($establecimiento->ID, '_scl_telefono', true);
             $organizador_email = get_post_meta($establecimiento->ID, '_scl_email', true);
@@ -55,18 +62,17 @@ if ($organizer_value) {
             $organizador_facebook = get_post_meta($establecimiento->ID, '_scl_facebook', true);
             $organizador_instagram = get_post_meta($establecimiento->ID, '_scl_instagram', true);
             $organizador_twitter = get_post_meta($establecimiento->ID, '_scl_twitter', true);
-            // Crear objeto similar a término para compatibilidad
-            $organizador = (object) array(
-                'term_id' => $establecimiento->ID,
-                'name' => $organizador_name,
-                'type' => 'establecimiento'
-            );
         }
-    } elseif ($tipo === 'organizador' && $id) {
-        $organizador_term = get_term($id, 'organizador');
+        // Crear objeto similar a término para compatibilidad
+        $organizador = (object) array(
+            'term_id' => $organizador_data['id'],
+            'name' => $organizador_name,
+            'type' => 'establecimiento'
+        );
+    } elseif ($organizador_data['type'] === 'organizador') {
+        $organizador_term = get_term($organizador_data['id'], 'organizador');
         if ($organizador_term && !is_wp_error($organizador_term)) {
             $organizador = $organizador_term;
-            $organizador_name = $organizador_term->name;
             $organizador_image = get_term_meta($organizador_term->term_id, 'image', true);
             $organizador_phone = get_term_meta($organizador_term->term_id, 'phone', true);
             $organizador_email = get_term_meta($organizador_term->term_id, 'email', true);
@@ -78,67 +84,35 @@ if ($organizer_value) {
     }
 }
 
-// Fallback: usar taxonomía si no hay metadatos
-if (!$organizador) {
-    $organizadores = wp_get_post_terms($event_id, 'organizador', array('number' => 1));
-    if (! empty($organizadores)) {
-        $organizador = $organizadores[0];
-        $organizador_name = $organizador->name;
-        $organizador_image = get_term_meta($organizador->term_id, 'image', true);
-        $organizador_phone = get_term_meta($organizador->term_id, 'phone', true);
-        $organizador_email = get_term_meta($organizador->term_id, 'email', true);
-        $organizador_website = get_term_meta($organizador->term_id, 'website', true);
-        $organizador_facebook = get_term_meta($organizador->term_id, 'facebook', true);
-        $organizador_instagram = get_term_meta($organizador->term_id, 'instagram', true);
-        $organizador_twitter = get_term_meta($organizador->term_id, 'twitter', true);
-    }
-}
-
-// Datos del lugar - Priorizar metadatos sobre taxonomía
+// Datos del lugar
 $lugar = null;
 $lugar_name = '';
 $lugar_address = '';
 $lugar_map_url = '';
 
-$lugar_value = get_post_meta($event_id, '_event_lugar_id', true);
-if ($lugar_value) {
-    // Parsear el formato tipo_id
-    $parts = explode('_', $lugar_value, 2);
-    $tipo = isset($parts[0]) ? $parts[0] : '';
-    $id = isset($parts[1]) ? intval($parts[1]) : 0;
+$lugar_data = Event_Show_Helpers::get_event_location($event_id);
+if ($lugar_data) {
+    $lugar_name = $lugar_data['name'];
 
-    if ($tipo === 'establecimiento' && $id && post_type_exists('establecimiento')) {
-        $establecimiento = get_post($id);
-        if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
-            $lugar_name = $establecimiento->post_title;
+    if ($lugar_data['type'] === 'establecimiento') {
+        $establecimiento = get_post($lugar_data['id']);
+        if ($establecimiento) {
             $lugar_address = get_post_meta($establecimiento->ID, '_scl_direccion', true);
             $lugar_map_url = get_post_meta($establecimiento->ID, '_scl_map_url', true);
-            // Crear objeto similar a término para compatibilidad
-            $lugar = (object) array(
-                'term_id' => $establecimiento->ID,
-                'name' => $lugar_name,
-                'type' => 'establecimiento'
-            );
         }
-    } elseif ($tipo === 'lugar' && $id) {
-        $lugar_term = get_term($id, 'lugar');
+        // Crear objeto similar a término para compatibilidad
+        $lugar = (object) array(
+            'term_id' => $lugar_data['id'],
+            'name' => $lugar_name,
+            'type' => 'establecimiento'
+        );
+    } elseif ($lugar_data['type'] === 'lugar') {
+        $lugar_term = get_term($lugar_data['id'], 'lugar');
         if ($lugar_term && !is_wp_error($lugar_term)) {
             $lugar = $lugar_term;
-            $lugar_name = $lugar_term->name;
             $lugar_address = get_term_meta($lugar_term->term_id, 'address', true);
             $lugar_map_url = get_term_meta($lugar_term->term_id, 'map_url', true);
         }
-    }
-}
-
-// Fallback: usar taxonomía si no hay metadatos
-if (!$lugar) {
-    $lugares = wp_get_post_terms($event_id, 'lugar', array('number' => 1));
-    if (! empty($lugares)) {
-        $lugar = $lugares[0];
-        $lugar_name = $lugar->name;
-        $lugar_address = get_term_meta($lugar->term_id, 'address', true);
-        $lugar_map_url = get_term_meta($lugar->term_id, 'map_url', true);
     }
 }
 

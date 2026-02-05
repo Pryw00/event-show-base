@@ -13,8 +13,8 @@ $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
 $thumbnail_id = get_post_meta($event_id, '_event_thumbnail', true);
 $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : get_the_post_thumbnail_url($event_id, 'medium');
 
-$lugares = wp_get_post_terms($event_id, 'lugar');
-$organizadores = wp_get_post_terms($event_id, 'organizador');
+$organizador = Event_Show_Helpers::get_event_organizer($event_id);
+$lugar = Event_Show_Helpers::get_event_location($event_id);
 ?>
 
 <div class="event-card">
@@ -37,16 +37,16 @@ $organizadores = wp_get_post_terms($event_id, 'organizador');
             <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
         </h3>
 
-        <?php if (! empty($organizadores)) : ?>
+        <?php if ($organizador) : ?>
             <p class="event-card-organizer">
-                <?php echo esc_html($organizadores[0]->name); ?>
+                <?php echo esc_html($organizador['name']); ?>
             </p>
         <?php endif; ?>
 
-        <?php if (! empty($lugares)) : ?>
+        <?php if ($lugar) : ?>
             <p class="event-card-location">
                 <span class="dashicons dashicons-location"></span>
-                <?php echo esc_html($lugares[0]->name); ?>
+                <?php echo esc_html($lugar['name']); ?>
             </p>
         <?php endif; ?>
 

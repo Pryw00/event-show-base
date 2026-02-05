@@ -21,22 +21,58 @@ $event_end_date = get_post_meta($event_id, '_event_end_date', true);
 $event_end_time = get_post_meta($event_id, '_event_end_time', true);
 
 // Obtener taxonomías (máximo 5 términos por tipo)
-$organizadores = wp_get_post_terms($event_id, 'organizador', array('number' => 5));
-$lugares = wp_get_post_terms($event_id, 'lugar', array('number' => 5));
 $categorias = wp_get_post_terms($event_id, 'categoria_evento', array('number' => 5));
 $clasificaciones = wp_get_post_terms($event_id, 'clasificacion_edad', array('number' => 5));
 
-// Datos del organizador
-$organizador = ! empty($organizadores) ? $organizadores[0] : null;
-$organizador_image = $organizador ? get_term_meta($organizador->term_id, 'image', true) : '';
-$organizador_phone = $organizador ? get_term_meta($organizador->term_id, 'phone', true) : '';
-$organizador_email = $organizador ? get_term_meta($organizador->term_id, 'email', true) : '';
-$organizador_website = $organizador ? get_term_meta($organizador->term_id, 'website', true) : '';
+// Datos del organizador usando helper
+$organizador_data = Event_Show_Helpers::get_event_organizer($event_id);
+$organizador = null;
+$organizador_image = '';
+$organizador_phone = '';
+$organizador_email = '';
+$organizador_website = '';
 
-// Datos del lugar
-$lugar = ! empty($lugares) ? $lugares[0] : null;
-$lugar_address = $lugar ? get_term_meta($lugar->term_id, 'address', true) : '';
-$lugar_map_url = $lugar ? get_term_meta($lugar->term_id, 'map_url', true) : '';
+if ($organizador_data) {
+    if ($organizador_data['type'] === 'establecimiento') {
+        $establecimiento = get_post($organizador_data['id']);
+        if ($establecimiento) {
+            $organizador_image = get_post_thumbnail_id($establecimiento->ID);
+            $organizador_phone = get_post_meta($establecimiento->ID, '_scl_telefono', true);
+            $organizador_email = get_post_meta($establecimiento->ID, '_scl_email', true);
+            $organizador_website = get_post_meta($establecimiento->ID, '_scl_website', true);
+        }
+    } elseif ($organizador_data['type'] === 'organizador') {
+        $organizador = get_term($organizador_data['id'], 'organizador');
+        if ($organizador && !is_wp_error($organizador)) {
+            $organizador_image = get_term_meta($organizador->term_id, 'image', true);
+            $organizador_phone = get_term_meta($organizador->term_id, 'phone', true);
+            $organizador_email = get_term_meta($organizador->term_id, 'email', true);
+            $organizador_website = get_term_meta($organizador->term_id, 'website', true);
+        }
+    }
+}
+
+// Datos del lugar usando helper
+$lugar_data = Event_Show_Helpers::get_event_location($event_id);
+$lugar = null;
+$lugar_address = '';
+$lugar_map_url = '';
+
+if ($lugar_data) {
+    if ($lugar_data['type'] === 'establecimiento') {
+        $establecimiento = get_post($lugar_data['id']);
+        if ($establecimiento) {
+            $lugar_address = get_post_meta($establecimiento->ID, '_scl_direccion', true);
+            $lugar_map_url = get_post_meta($establecimiento->ID, '_scl_map_url', true);
+        }
+    } elseif ($lugar_data['type'] === 'lugar') {
+        $lugar = get_term($lugar_data['id'], 'lugar');
+        if ($lugar && !is_wp_error($lugar)) {
+            $lugar_address = get_term_meta($lugar->term_id, 'address', true);
+            $lugar_map_url = get_term_meta($lugar->term_id, 'map_url', true);
+        }
+    }
+}
 
 // URLs de calendario
 $ical_url = admin_url('admin-ajax.php?action=event_show_download_ical&event_id=' . $event_id);

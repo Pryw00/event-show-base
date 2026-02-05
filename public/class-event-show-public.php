@@ -120,13 +120,16 @@ class Event_Show_Public
         $end_datetime = date('c', strtotime(str_replace('/', '-', ($event_end_date ? $event_end_date : $event_date)) . ' ' . ($event_end_time ? $event_end_time : $event_time)));
 
         // Obtener lugar
-        $lugares = wp_get_post_terms($event_id, 'lugar');
-        $lugar_nombre = ! empty($lugares) ? $lugares[0]->name : '';
-        $lugar_address = ! empty($lugares) ? get_term_meta($lugares[0]->term_id, 'address', true) : '';
+        $lugar = Event_Show_Helpers::get_event_location($event_id);
+        $lugar_nombre = $lugar ? $lugar['name'] : '';
+        $lugar_address = '';
+        if ($lugar && $lugar['type'] === 'lugar') {
+            $lugar_address = get_term_meta($lugar['id'], 'address', true);
+        }
 
         // Obtener organizador
-        $organizadores = wp_get_post_terms($event_id, 'organizador');
-        $organizador_nombre = ! empty($organizadores) ? $organizadores[0]->name : '';
+        $organizador = Event_Show_Helpers::get_event_organizer($event_id);
+        $organizador_nombre = $organizador ? $organizador['name'] : '';
 
         // Imagen
         $image_url = get_the_post_thumbnail_url($event_id, 'large');
