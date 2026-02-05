@@ -23,22 +23,124 @@ $event_end_date = get_post_meta($event_id, '_event_end_date', true);
 $event_end_time = get_post_meta($event_id, '_event_end_time', true);
 
 // Obtener taxonomías (máximo 5 términos por tipo)
-$organizadores = wp_get_post_terms($event_id, 'organizador', array('number' => 5));
-$lugares = wp_get_post_terms($event_id, 'lugar', array('number' => 5));
 $categorias = wp_get_post_terms($event_id, 'categoria_evento', array('number' => 5));
 $clasificaciones = wp_get_post_terms($event_id, 'clasificacion_edad', array('number' => 5));
 
-// Datos del organizador
-$organizador = ! empty($organizadores) ? $organizadores[0] : null;
-$organizador_image = $organizador ? get_term_meta($organizador->term_id, 'image', true) : '';
-$organizador_phone = $organizador ? get_term_meta($organizador->term_id, 'phone', true) : '';
-$organizador_email = $organizador ? get_term_meta($organizador->term_id, 'email', true) : '';
-$organizador_website = $organizador ? get_term_meta($organizador->term_id, 'website', true) : '';
+// Datos del organizador - Priorizar metadatos sobre taxonomía
+$organizador = null;
+$organizador_name = '';
+$organizador_image = '';
+$organizador_phone = '';
+$organizador_email = '';
+$organizador_website = '';
+$organizador_facebook = '';
+$organizador_instagram = '';
+$organizador_twitter = '';
 
-// Datos del lugar
-$lugar = ! empty($lugares) ? $lugares[0] : null;
-$lugar_address = $lugar ? get_term_meta($lugar->term_id, 'address', true) : '';
-$lugar_map_url = $lugar ? get_term_meta($lugar->term_id, 'map_url', true) : '';
+$organizer_value = get_post_meta($event_id, '_event_organizer_id', true);
+if ($organizer_value) {
+    // Parsear el formato tipo_id
+    $parts = explode('_', $organizer_value, 2);
+    $tipo = isset($parts[0]) ? $parts[0] : '';
+    $id = isset($parts[1]) ? intval($parts[1]) : 0;
+
+    if ($tipo === 'establecimiento' && $id && post_type_exists('establecimiento')) {
+        $establecimiento = get_post($id);
+        if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
+            $organizador_name = $establecimiento->post_title;
+            $organizador_image = get_post_thumbnail_id($establecimiento->ID);
+            $organizador_phone = get_post_meta($establecimiento->ID, '_scl_telefono', true);
+            $organizador_email = get_post_meta($establecimiento->ID, '_scl_email', true);
+            $organizador_website = get_post_meta($establecimiento->ID, '_scl_website', true);
+            $organizador_facebook = get_post_meta($establecimiento->ID, '_scl_facebook', true);
+            $organizador_instagram = get_post_meta($establecimiento->ID, '_scl_instagram', true);
+            $organizador_twitter = get_post_meta($establecimiento->ID, '_scl_twitter', true);
+            // Crear objeto similar a término para compatibilidad
+            $organizador = (object) array(
+                'term_id' => $establecimiento->ID,
+                'name' => $organizador_name,
+                'type' => 'establecimiento'
+            );
+        }
+    } elseif ($tipo === 'organizador' && $id) {
+        $organizador_term = get_term($id, 'organizador');
+        if ($organizador_term && !is_wp_error($organizador_term)) {
+            $organizador = $organizador_term;
+            $organizador_name = $organizador_term->name;
+            $organizador_image = get_term_meta($organizador_term->term_id, 'image', true);
+            $organizador_phone = get_term_meta($organizador_term->term_id, 'phone', true);
+            $organizador_email = get_term_meta($organizador_term->term_id, 'email', true);
+            $organizador_website = get_term_meta($organizador_term->term_id, 'website', true);
+            $organizador_facebook = get_term_meta($organizador_term->term_id, 'facebook', true);
+            $organizador_instagram = get_term_meta($organizador_term->term_id, 'instagram', true);
+            $organizador_twitter = get_term_meta($organizador_term->term_id, 'twitter', true);
+        }
+    }
+}
+
+// Fallback: usar taxonomía si no hay metadatos
+if (!$organizador) {
+    $organizadores = wp_get_post_terms($event_id, 'organizador', array('number' => 1));
+    if (! empty($organizadores)) {
+        $organizador = $organizadores[0];
+        $organizador_name = $organizador->name;
+        $organizador_image = get_term_meta($organizador->term_id, 'image', true);
+        $organizador_phone = get_term_meta($organizador->term_id, 'phone', true);
+        $organizador_email = get_term_meta($organizador->term_id, 'email', true);
+        $organizador_website = get_term_meta($organizador->term_id, 'website', true);
+        $organizador_facebook = get_term_meta($organizador->term_id, 'facebook', true);
+        $organizador_instagram = get_term_meta($organizador->term_id, 'instagram', true);
+        $organizador_twitter = get_term_meta($organizador->term_id, 'twitter', true);
+    }
+}
+
+// Datos del lugar - Priorizar metadatos sobre taxonomía
+$lugar = null;
+$lugar_name = '';
+$lugar_address = '';
+$lugar_map_url = '';
+
+$lugar_value = get_post_meta($event_id, '_event_lugar_id', true);
+if ($lugar_value) {
+    // Parsear el formato tipo_id
+    $parts = explode('_', $lugar_value, 2);
+    $tipo = isset($parts[0]) ? $parts[0] : '';
+    $id = isset($parts[1]) ? intval($parts[1]) : 0;
+
+    if ($tipo === 'establecimiento' && $id && post_type_exists('establecimiento')) {
+        $establecimiento = get_post($id);
+        if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
+            $lugar_name = $establecimiento->post_title;
+            $lugar_address = get_post_meta($establecimiento->ID, '_scl_direccion', true);
+            $lugar_map_url = get_post_meta($establecimiento->ID, '_scl_map_url', true);
+            // Crear objeto similar a término para compatibilidad
+            $lugar = (object) array(
+                'term_id' => $establecimiento->ID,
+                'name' => $lugar_name,
+                'type' => 'establecimiento'
+            );
+        }
+    } elseif ($tipo === 'lugar' && $id) {
+        $lugar_term = get_term($id, 'lugar');
+        if ($lugar_term && !is_wp_error($lugar_term)) {
+            $lugar = $lugar_term;
+            $lugar_name = $lugar_term->name;
+            $lugar_address = get_term_meta($lugar_term->term_id, 'address', true);
+            $lugar_map_url = get_term_meta($lugar_term->term_id, 'map_url', true);
+        }
+    }
+}
+
+// Fallback: usar taxonomía si no hay metadatos
+if (!$lugar) {
+    $lugares = wp_get_post_terms($event_id, 'lugar', array('number' => 1));
+    if (! empty($lugares)) {
+        $lugar = $lugares[0];
+        $lugar_name = $lugar->name;
+        $lugar_address = get_term_meta($lugar->term_id, 'address', true);
+        $lugar_map_url = get_term_meta($lugar->term_id, 'map_url', true);
+    }
+}
 
 // URLs de calendario (generación simplificada para evitar recursión)
 $ical_url = admin_url('admin-ajax.php?action=event_show_download_ical&event_id=' . $event_id);
@@ -71,7 +173,7 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                     <?php endif; ?>
                     <?php if ($lugar) : ?>
                         <span class="event-hero-location">
-                            <?php echo esc_html($lugar->name); ?>
+                            <?php echo esc_html($lugar_name); ?>
                         </span>
                     <?php endif; ?>
                 </div>
@@ -105,7 +207,7 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                     <?php endif; ?>
                     <div class="organizer-text">
                         <span class="organizer-label"><?php esc_html_e('Organizado por', 'event-show-base'); ?></span>
-                        <strong class="organizer-name"><?php echo esc_html($organizador->name); ?></strong>
+                        <strong class="organizer-name"><?php echo esc_html($organizador_name); ?></strong>
                     </div>
                     <div class="organizer-text-info">
                         <?php if ($organizador_phone) : ?>
@@ -116,6 +218,15 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                         <?php endif; ?>
                         <?php if ($organizador_website) : ?>
                             <a href="<?php echo esc_url($organizador_website); ?>" target="_blank" title="Web" style="margin-left:6px;"><span class="dashicons dashicons-admin-site"></span></a>
+                        <?php endif; ?>
+                        <?php if ($organizador_facebook) : ?>
+                            <a href="<?php echo esc_url($organizador_facebook); ?>" target="_blank" title="Facebook" style="margin-left:6px;"><span class="dashicons dashicons-facebook"></span></a>
+                        <?php endif; ?>
+                        <?php if ($organizador_instagram) : ?>
+                            <a href="<?php echo esc_url($organizador_instagram); ?>" target="_blank" title="Instagram" style="margin-left:6px;"><span class="dashicons dashicons-instagram"></span></a>
+                        <?php endif; ?>
+                        <?php if ($organizador_twitter) : ?>
+                            <a href="<?php echo esc_url($organizador_twitter); ?>" target="_blank" title="Twitter" style="margin-left:6px;"><span class="dashicons dashicons-twitter"></span></a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -144,10 +255,10 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                             <span class="detail-value">
                                 <?php if (!empty($lugar_map_url)) : ?>
                                     <a href="<?php echo esc_url($lugar_map_url); ?>" target="_blank" rel="noopener" title="<?php esc_attr_e('Ver ubicación', 'event-show-base'); ?>">
-                                        <?php echo esc_html($lugar->name); ?>
+                                        <?php echo esc_html($lugar_name); ?>
                                     </a>
                                 <?php else : ?>
-                                    <?php echo esc_html($lugar->name); ?>
+                                    <?php echo esc_html($lugar_name); ?>
                                 <?php endif; ?>
                             </span>
                         </div>
@@ -212,7 +323,7 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                         <?php endif; ?>
                         <div class="organizer-meta">
                             <span class="organizer-published-by"><?php esc_html_e('Publicado por', 'event-show-base'); ?></span>
-                            <strong class="organizer-name-large"><?php echo esc_html($organizador->name); ?></strong>
+                            <strong class="organizer-name-large"><?php echo esc_html($organizador_name); ?></strong>
                             <?php if ($organizador_phone) : ?>
                                 <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?>" target="_blank" title="WhatsApp" style="margin-left:6px;"><span class="dashicons dashicons-whatsapp"></span> <?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?></a>
                             <?php endif; ?>
@@ -221,6 +332,15 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                             <?php endif; ?>
                             <?php if ($organizador_website) : ?>
                                 <a href="<?php echo esc_url($organizador_website); ?>" target="_blank" title="Web" style="margin-left:6px;"><span class="dashicons dashicons-admin-site"></span> Website</a>
+                            <?php endif; ?>
+                            <?php if ($organizador_facebook) : ?>
+                                <a href="<?php echo esc_url($organizador_facebook); ?>" target="_blank" title="Facebook" style="margin-left:6px;"><span class="dashicons dashicons-facebook"></span> Facebook</a>
+                            <?php endif; ?>
+                            <?php if ($organizador_instagram) : ?>
+                                <a href="<?php echo esc_url($organizador_instagram); ?>" target="_blank" title="Instagram" style="margin-left:6px;"><span class="dashicons dashicons-instagram"></span> Instagram</a>
+                            <?php endif; ?>
+                            <?php if ($organizador_twitter) : ?>
+                                <a href="<?php echo esc_url($organizador_twitter); ?>" target="_blank" title="Twitter" style="margin-left:6px;"><span class="dashicons dashicons-twitter"></span> Twitter</a>
                             <?php endif; ?>
                         </div>
                     </div>

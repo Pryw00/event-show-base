@@ -184,8 +184,7 @@ $current_user = wp_get_current_user();
                         if (current_user_can('manage_options')) {
                             esc_html_e('Selecciona el establecimiento que organiza este evento.', 'event-show-base');
                         } else {
-                            esc_html_e('Solo puedes seleccionar tus propios establecimientos. ¿No tienes uno?', 'event-show-base');
-                            echo ' <a href="' . esc_url(admin_url('post-new.php?post_type=establecimiento')) . '">' . esc_html__('Crear establecimiento', 'event-show-base') . '</a>';
+                            esc_html_e('Solo puedes seleccionar tus propios establecimientos. Si no tienes uno, ve a tu Dashboard → pestaña "Organizadores" para ver tus establecimientos o crear uno nuevo.', 'event-show-base');
                         }
                         ?>
                     </p>
@@ -195,9 +194,10 @@ $current_user = wp_get_current_user();
                     <div class="alert alert-warning" style="padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">
                         <strong><?php esc_html_e('¡Atención!', 'event-show-base'); ?></strong>
                         <p><?php esc_html_e('No tienes establecimientos disponibles. Debes crear al menos un establecimiento para poder publicar eventos.', 'event-show-base'); ?></p>
-                        <a href="<?php echo esc_url(admin_url('post-new.php?post_type=establecimiento')); ?>" class="button button-primary">
-                            <?php esc_html_e('Crear mi primer establecimiento', 'event-show-base'); ?>
-                        </a>
+                        <p style="margin-top: 10px;">
+                            <strong><?php esc_html_e('Para crear un establecimiento:', 'event-show-base'); ?></strong><br>
+                            <?php esc_html_e('Ve a tu Dashboard → pestaña "Organizadores" donde podrás gestionar y crear tus establecimientos.', 'event-show-base'); ?>
+                        </p>
                     </div>
                 </div>
             <?php endif; ?>

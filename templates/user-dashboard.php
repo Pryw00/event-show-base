@@ -261,11 +261,8 @@ $user_events = new WP_Query(array(
             if ($has_establishments) :
                 // Modo: Establecimientos como organizadores
             ?>
-                <div class="dashboard-section-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="dashboard-section-header">
                     <h3><?php esc_html_e('Mis Establecimientos Organizadores', 'event-show-base'); ?></h3>
-                    <a href="<?php echo esc_url(admin_url('post-new.php?post_type=establecimiento')); ?>" class="button">
-                        <?php esc_html_e('Crear Nuevo Establecimiento', 'event-show-base'); ?>
-                    </a>
                 </div>
 
                 <p class="description" style="margin-bottom: 20px;">
@@ -411,14 +408,10 @@ $user_events = new WP_Query(array(
                         <p style="color: #666; margin-bottom: 20px;">
                             <?php esc_html_e('Necesitas crear al menos un establecimiento para poder usarlo como organizador de tus eventos.', 'event-show-base'); ?>
                         </p>
-                        <a href="<?php echo esc_url(admin_url('post-new.php?post_type=establecimiento')); ?>" class="button button-primary button-large">
-                            <span class="dashicons dashicons-plus-alt" style="vertical-align: middle;"></span>
-                            <?php esc_html_e('Crear mi Primer Establecimiento', 'event-show-base'); ?>
-                        </a>
-                        <div style="margin-top: 20px; padding: 15px; background: #fff; border-left: 4px solid #0073aa; text-align: left;">
-                            <strong><?php esc_html_e('¿Qué es un establecimiento?', 'event-show-base'); ?></strong>
+                        <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; text-align: left;">
+                            <strong><?php esc_html_e('¿Cómo crear un establecimiento?', 'event-show-base'); ?></strong>
                             <p style="margin: 10px 0 0 0; color: #666; font-size: 0.95em;">
-                                <?php esc_html_e('Un establecimiento representa tu negocio, organización o entidad. Al crear eventos, podrás seleccionar tus establecimientos como organizadores.', 'event-show-base'); ?>
+                                <?php esc_html_e('Ve a la pestaña de "Lugares" en este dashboard y crea tu establecimiento allí. Luego podrás usarlo como organizador de tus eventos.', 'event-show-base'); ?>
                             </p>
                         </div>
                     </div>

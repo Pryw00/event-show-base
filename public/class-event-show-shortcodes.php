@@ -318,14 +318,73 @@ class Event_Show_Shortcodes
         // Verificar si el registro está habilitado
         $enable_registration = get_post_meta($event_id, '_enable_registration', true);
         if ('0' === $enable_registration) {
-            // Obtener organizador desde la taxonomía 'organizador' (como en single-event.php)
-            $organizadores = wp_get_post_terms($event_id, 'organizador', array('number' => 1));
-            $organizador = !empty($organizadores) ? $organizadores[0] : null;
-            $organizador_name = $organizador ? $organizador->name : '';
-            $organizador_email = $organizador ? get_term_meta($organizador->term_id, 'email', true) : '';
-            $organizador_phone = $organizador ? get_term_meta($organizador->term_id, 'phone', true) : '';
-            $organizador_image = $organizador ? get_term_meta($organizador->term_id, 'image', true) : '';
-            $organizador_website = $organizador ? get_term_meta($organizador->term_id, 'website', true) : '';
+            // Obtener organizador - Priorizar metadatos sobre taxonomía (igual que single-evento.php)
+            $organizador = null;
+            $organizador_name = '';
+            $organizador_email = '';
+            $organizador_phone = '';
+            $organizador_image = '';
+            $organizador_website = '';
+            $organizador_facebook = '';
+            $organizador_instagram = '';
+            $organizador_twitter = '';
+
+            $organizer_value = get_post_meta($event_id, '_event_organizer_id', true);
+            if ($organizer_value) {
+                // Parsear el formato tipo_id
+                $parts = explode('_', $organizer_value, 2);
+                $tipo = isset($parts[0]) ? $parts[0] : '';
+                $id = isset($parts[1]) ? intval($parts[1]) : 0;
+
+                if ($tipo === 'establecimiento' && $id && post_type_exists('establecimiento')) {
+                    $establecimiento = get_post($id);
+                    if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
+                        $organizador_name = $establecimiento->post_title;
+                        $organizador_image = get_post_thumbnail_id($establecimiento->ID);
+                        $organizador_phone = get_post_meta($establecimiento->ID, '_scl_telefono', true);
+                        $organizador_email = get_post_meta($establecimiento->ID, '_scl_email', true);
+                        $organizador_website = get_post_meta($establecimiento->ID, '_scl_website', true);
+                        $organizador_facebook = get_post_meta($establecimiento->ID, '_scl_facebook', true);
+                        $organizador_instagram = get_post_meta($establecimiento->ID, '_scl_instagram', true);
+                        $organizador_twitter = get_post_meta($establecimiento->ID, '_scl_twitter', true);
+                        // Crear objeto similar a término para compatibilidad
+                        $organizador = (object) array(
+                            'term_id' => $establecimiento->ID,
+                            'name' => $organizador_name,
+                            'type' => 'establecimiento'
+                        );
+                    }
+                } elseif ($tipo === 'organizador' && $id) {
+                    $organizador_term = get_term($id, 'organizador');
+                    if ($organizador_term && !is_wp_error($organizador_term)) {
+                        $organizador = $organizador_term;
+                        $organizador_name = $organizador_term->name;
+                        $organizador_image = get_term_meta($organizador_term->term_id, 'image', true);
+                        $organizador_phone = get_term_meta($organizador_term->term_id, 'phone', true);
+                        $organizador_email = get_term_meta($organizador_term->term_id, 'email', true);
+                        $organizador_website = get_term_meta($organizador_term->term_id, 'website', true);
+                        $organizador_facebook = get_term_meta($organizador_term->term_id, 'facebook', true);
+                        $organizador_instagram = get_term_meta($organizador_term->term_id, 'instagram', true);
+                        $organizador_twitter = get_term_meta($organizador_term->term_id, 'twitter', true);
+                    }
+                }
+            }
+
+            // Fallback: usar taxonomía si no hay metadatos
+            if (!$organizador) {
+                $organizadores = wp_get_post_terms($event_id, 'organizador', array('number' => 1));
+                $organizador = !empty($organizadores) ? $organizadores[0] : null;
+                if ($organizador) {
+                    $organizador_name = $organizador->name;
+                    $organizador_email = get_term_meta($organizador->term_id, 'email', true);
+                    $organizador_phone = get_term_meta($organizador->term_id, 'phone', true);
+                    $organizador_image = get_term_meta($organizador->term_id, 'image', true);
+                    $organizador_website = get_term_meta($organizador->term_id, 'website', true);
+                    $organizador_facebook = get_term_meta($organizador->term_id, 'facebook', true);
+                    $organizador_instagram = get_term_meta($organizador->term_id, 'instagram', true);
+                    $organizador_twitter = get_term_meta($organizador->term_id, 'twitter', true);
+                }
+            }
 
             // Avatar
             if ($organizador_image) {
@@ -338,20 +397,29 @@ class Event_Show_Shortcodes
             if ($organizador_name || $organizador_email || $organizador_phone) {
                 $contact_buttons = '';
                 if ($organizador_email) {
-                    $contact_buttons .= '<a href="mailto:' . esc_attr($organizador_email) . '" class="event-contact-btn" style="display:inline-block;margin:0 6px 0 0;padding:8px 16px;color:#fff;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-email"></span> Email</a>';
+                    $contact_buttons .= '<a href="mailto:' . esc_attr($organizador_email) . '" class="event-contact-btn" style="display:inline-block;margin:0 6px 6px 0;padding:8px 16px;color:#fff;background:#0073aa;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-email" style="vertical-align:middle;"></span> Email</a>';
                 }
                 if ($organizador_phone) {
-                    $contact_buttons .= '<a href="tel:' . esc_attr($organizador_phone) . '" class="event-contact-btn" style="display:inline-block;margin:0 6px 0 0;padding:8px 16px;color:#fff;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-phone"></span> Teléfono</a>';
+                    $contact_buttons .= '<a href="https://wa.me/' . preg_replace('/[^0-9]/', '', $organizador_phone) . '" target="_blank" class="event-contact-btn" style="display:inline-block;margin:0 6px 6px 0;padding:8px 16px;color:#fff;background:#25D366;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-whatsapp" style="vertical-align:middle;"></span> WhatsApp</a>';
                 }
                 if ($organizador_website) {
-                    $contact_buttons .= '<a href="' . esc_url($organizador_website) . '" target="_blank" class="event-contact-btn" style="display:inline-block;margin:0 6px 0 0;padding:8px 16px;color:#fff;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-admin-site"></span> Web</a>';
+                    $contact_buttons .= '<a href="' . esc_url($organizador_website) . '" target="_blank" class="event-contact-btn" style="display:inline-block;margin:0 6px 6px 0;padding:8px 16px;color:#fff;background:#666;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-admin-site" style="vertical-align:middle;"></span> Web</a>';
+                }
+                if ($organizador_facebook) {
+                    $contact_buttons .= '<a href="' . esc_url($organizador_facebook) . '" target="_blank" class="event-contact-btn" style="display:inline-block;margin:0 6px 6px 0;padding:8px 16px;color:#fff;background:#1877F2;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-facebook" style="vertical-align:middle;"></span> Facebook</a>';
+                }
+                if ($organizador_instagram) {
+                    $contact_buttons .= '<a href="' . esc_url($organizador_instagram) . '" target="_blank" class="event-contact-btn" style="display:inline-block;margin:0 6px 6px 0;padding:8px 16px;color:#fff;background:#E4405F;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-instagram" style="vertical-align:middle;"></span> Instagram</a>';
+                }
+                if ($organizador_twitter) {
+                    $contact_buttons .= '<a href="' . esc_url($organizador_twitter) . '" target="_blank" class="event-contact-btn" style="display:inline-block;margin:0 6px 6px 0;padding:8px 16px;color:#fff;background:#1DA1F2;border-radius:4px;text-decoration:none;font-weight:500;"><span class="dashicons dashicons-twitter" style="vertical-align:middle;"></span> Twitter</a>';
                 }
 
                 return '<div class="event-organizer-contact-card" style="box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:24px 20px 18px 20px;border-radius:12px;max-width:400px;margin:0 auto 24px auto;text-align:center;">'
                     . '<div style="margin-bottom:12px;">' . $organizer_avatar . '</div>'
-                    . ($organizador_name ? '<div style="font-size:18px;font-weight:600;">' . esc_html($organizador_name) . '</div>' : '')
-                    . ($organizador_email ? '<div style="font-size:14px;margin-bottom:2px;">' . esc_html__('Para registrarte en este evento, contacta directamente con el organizador.', 'event-show-base') . '</div>' : '')
-                    . ($contact_buttons ? '<div style="margin-top:10px;">' . $contact_buttons . '</div>' : '')
+                    . ($organizador_name ? '<div style="font-size:18px;font-weight:600;margin-bottom:8px;">' . esc_html($organizador_name) . '</div>' : '')
+                    . '<div style="font-size:14px;margin-bottom:12px;color:#666;">' . esc_html__('Para registrarte en este evento, contacta directamente con el organizador.', 'event-show-base') . '</div>'
+                    . ($contact_buttons ? '<div style="margin-top:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;">' . $contact_buttons . '</div>' : '')
                     . '</div>';
             } else {
                 // Si no hay datos del organizador, solo mostrar el mensaje genérico
