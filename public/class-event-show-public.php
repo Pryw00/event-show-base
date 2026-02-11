@@ -66,10 +66,8 @@ class Event_Show_Public
             wp_enqueue_media();
         }
 
-        // Cargar Dashicons en el frontend para single-evento
-        if (is_singular('evento')) {
-            wp_enqueue_style('dashicons');
-        }
+        // Cargar Dashicons en el frontend (se usan en eventos y shortcodes)
+        wp_enqueue_style('dashicons');
     }
 
     /**
