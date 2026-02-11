@@ -2007,6 +2007,7 @@ h6,
 
   .slider-location {
     justify-content: center;
+    margin-bottom: 5px;
   }
 
   .slider-images-panel {
@@ -2051,10 +2052,12 @@ h6,
 
   .slider-title {
     font-size: 28px;
+    margin-bottom: 6px;
   }
 
   .slider-description {
     justify-content: center;
+    margin-bottom: 6px;
   }
 
   .slider-images-track {
@@ -2105,7 +2108,8 @@ h6,
   }
 
   .slider-btn {
-    margin-bottom: 10px;
+    margin-bottom: 0px;
+    margin-top: 12px;
   }
 }
 
@@ -2283,7 +2287,6 @@ h6,
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 15px;
     align-content: center;
     align-items: center;
   }
