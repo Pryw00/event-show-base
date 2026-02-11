@@ -1776,7 +1776,15 @@ h6,
 }
 
 .slider-date,
-.slider-time,
+.slider-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--event-warning-color);
+  font-size: 18px;
+  text-transform: uppercase;
+}
+
 .slider-category {
   display: flex;
   align-items: center;
@@ -1787,7 +1795,14 @@ h6,
 }
 
 .slider-date .dashicons,
-.slider-time .dashicons,
+.slider-time .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--event-warning-color);
+  flex-shrink: 0;
+}
+
 .slider-category .dashicons,
 .slider-location .dashicons,
 .slider-description .dashicons {
