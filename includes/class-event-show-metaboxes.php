@@ -180,8 +180,38 @@ class Event_Show_Metaboxes
     {
         $thumbnail_id = get_post_meta($post->ID, '_event_thumbnail', true);
         $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : '';
+
+        $banner_id = get_post_meta($post->ID, '_event_banner', true);
+        $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'medium') : '';
     ?>
         <div class="event-show-images-metabox">
+            <p>
+                <label><strong><?php esc_html_e('Banner Principal', 'event-show-base'); ?></strong></label>
+            </p>
+            <div class="event-banner-preview">
+                <?php if ($banner_url) : ?>
+                    <img src="<?php echo esc_url($banner_url); ?>" style="max-width: 100%; height: auto;">
+                <?php else : ?>
+                    <p class="description"><?php esc_html_e('No hay banner seleccionado', 'event-show-base'); ?></p>
+                <?php endif; ?>
+            </div>
+            <p>
+                <input type="hidden" id="event_banner" name="event_banner" value="<?php echo esc_attr($banner_id); ?>">
+                <button type="button" class="button event-upload-banner">
+                    <?php esc_html_e('Seleccionar Banner', 'event-show-base'); ?>
+                </button>
+                <?php if ($banner_url) : ?>
+                    <button type="button" class="button event-remove-banner">
+                        <?php esc_html_e('Eliminar', 'event-show-base'); ?>
+                    </button>
+                <?php endif; ?>
+            </p>
+            <p class="description">
+                <?php esc_html_e('Imagen de banner para la página del evento (se mostrará sin overlay de título)', 'event-show-base'); ?>
+            </p>
+
+            <hr style="margin: 20px 0;">
+
             <p>
                 <label><strong><?php esc_html_e('Miniatura para Grid', 'event-show-base'); ?></strong></label>
             </p>
@@ -344,6 +374,10 @@ class Event_Show_Metaboxes
         // Guardar miniatura
         if (isset($_POST['event_thumbnail'])) {
             update_post_meta($post_id, '_event_thumbnail', absint($_POST['event_thumbnail']));
+        }
+        // Guardar banner
+        if (isset($_POST['event_banner'])) {
+            update_post_meta($post_id, '_event_banner', absint($_POST['event_banner']));
         }
         // Guardar opciones
         $use_default_template = isset($_POST['use_default_template']) ? '1' : '0';

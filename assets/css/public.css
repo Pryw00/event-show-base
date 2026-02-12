@@ -1122,6 +1122,7 @@ h6,
   font-size: 14px;
   color: var(--event-secondary-color);
   font-weight: 500;
+  text-transform: capitalize;
 }
 
 /* Descripción */

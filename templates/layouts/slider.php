@@ -100,11 +100,13 @@ $autoplay_speed = isset($atts['autoplay_speed']) ? intval($atts['autoplay_speed'
                         $events->the_post();
                         $event_id = get_the_ID();
                         $thumbnail_id = get_post_meta($event_id, '_event_thumbnail', true);
-                        $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'large') : get_the_post_thumbnail_url($event_id, 'large');
 
-                        if (! $thumbnail_url) {
-                            $thumbnail_url = EVENT_SHOW_PLUGIN_URL . 'assets/images/default-event.jpg';
+                        // Si no tiene miniatura personalizada, usar la miniatura por defecto
+                        if (!$thumbnail_id) {
+                            $thumbnail_id = get_option('event_show_default_thumbnail', '');
                         }
+
+                        $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'large') : get_the_post_thumbnail_url($event_id, 'large');
 
                         // Determinar clase según posición
                         $position_class = '';

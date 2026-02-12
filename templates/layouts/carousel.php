@@ -22,6 +22,12 @@ $show_countdown = isset($atts['show_countdown']) && 'yes' === $atts['show_countd
                     $event_time = get_post_meta($event_id, '_event_time', true);
                     $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
                     $thumbnail_id = get_post_meta($event_id, '_event_thumbnail', true);
+                    
+                    // Si no tiene miniatura personalizada, usar la miniatura por defecto
+                    if (!$thumbnail_id) {
+                        $thumbnail_id = get_option('event_show_default_thumbnail', '');
+                    }
+                    
                     $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'large') : get_the_post_thumbnail_url($event_id, 'large');
 
                     $organizador = Event_Show_Helpers::get_event_organizer($event_id);

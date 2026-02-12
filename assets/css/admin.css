@@ -113,6 +113,34 @@
   border-color: #a00;
 }
 
+/* Campos de imagen en settings */
+.event-show-image-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.event-show-image-preview {
+  display: none;
+}
+
+.event-show-image-preview img {
+  max-width: 300px;
+  height: auto;
+  border: 1px solid var(--es-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.event-show-upload-image-btn,
+.event-show-remove-image-btn {
+  align-self: flex-start;
+}
+
+.event-show-remove-image-btn {
+  margin-left: 10px;
+}
+
 /* Galería */
 #event_gallery_preview {
   display: flex;

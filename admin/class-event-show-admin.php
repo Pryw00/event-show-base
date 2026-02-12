@@ -242,6 +242,8 @@ class Event_Show_Admin
         register_setting('event_show_settings', 'event_show_events_per_page');
         register_setting('event_show_settings', 'event_show_date_format');
         register_setting('event_show_settings', 'event_show_time_format');
+        register_setting('event_show_settings', 'event_show_default_banner');
+        register_setting('event_show_settings', 'event_show_default_thumbnail');
     }
 
     /**
@@ -400,40 +402,40 @@ class Event_Show_Admin
                             if (!is_array($selected_roles)) {
                                 $selected_roles = array();
                             }
-                            
+
                             // Obtener todos los roles de WordPress
                             $all_roles = wp_roles()->roles;
-                            
+
                             if (!empty($all_roles)) :
                             ?>
                                 <select name="event_show_auto_publish_roles[]" id="event_show_auto_publish_roles" multiple size="8" style="min-width: 350px; height: auto;">
-                                    <?php 
+                                    <?php
                                     // Separar roles por tipo
                                     $default_roles = array('administrator', 'editor', 'author', 'contributor', 'subscriber');
                                     $custom_roles = array();
-                                    
+
                                     foreach ($all_roles as $role_slug => $role_info) {
                                         if (!in_array($role_slug, $default_roles)) {
                                             $custom_roles[$role_slug] = $role_info;
                                         }
                                     }
-                                    
+
                                     // Mostrar roles por defecto de WordPress
                                     if (!empty($default_roles)) : ?>
                                         <optgroup label="<?php esc_attr_e('Roles de WordPress', 'event-show-base'); ?>">
-                                            <?php foreach ($default_roles as $role_slug) : 
+                                            <?php foreach ($default_roles as $role_slug) :
                                                 if (isset($all_roles[$role_slug])) :
                                                     $role_info = $all_roles[$role_slug];
                                             ?>
-                                                <option value="<?php echo esc_attr($role_slug); ?>" <?php echo in_array($role_slug, $selected_roles) ? 'selected' : ''; ?>>
-                                                    <?php echo esc_html(translate_user_role($role_info['name'])); ?>
-                                                </option>
-                                            <?php 
+                                                    <option value="<?php echo esc_attr($role_slug); ?>" <?php echo in_array($role_slug, $selected_roles) ? 'selected' : ''; ?>>
+                                                        <?php echo esc_html(translate_user_role($role_info['name'])); ?>
+                                                    </option>
+                                            <?php
                                                 endif;
                                             endforeach; ?>
                                         </optgroup>
-                                    <?php endif; 
-                                    
+                                    <?php endif;
+
                                     // Mostrar roles personalizados (incluye los de Access Control)
                                     if (!empty($custom_roles)) : ?>
                                         <optgroup label="<?php esc_attr_e('Roles Personalizados', 'event-show-base'); ?>">
@@ -448,7 +450,7 @@ class Event_Show_Admin
                                 <p class="description">
                                     <?php esc_html_e('Usuarios con estos roles pueden publicar eventos directamente sin aprobación del administrador. Ejemplo: usuarios con rol "gold" pueden publicar inmediatamente. Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples roles.', 'event-show-base'); ?>
                                     <br>
-                                    <strong><?php esc_html_e('Nota:', 'event-show-base'); ?></strong> 
+                                    <strong><?php esc_html_e('Nota:', 'event-show-base'); ?></strong>
                                     <?php esc_html_e('Esta configuración solo aplica si "Requerir Aprobación" está activada arriba. Los administradores siempre pueden publicar directamente.', 'event-show-base'); ?>
                                 </p>
                             <?php else : ?>
@@ -474,6 +476,62 @@ class Event_Show_Admin
                                 class="small-text">
                             <p class="description">
                                 <?php esc_html_e('Número de eventos a mostrar en las vistas públicas por defecto', 'event-show-base'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="event_show_default_banner">
+                                <?php esc_html_e('Banner por Defecto', 'event-show-base'); ?>
+                            </label>
+                        </th>
+                        <td>
+                            <?php
+                            $default_banner_id = get_option('event_show_default_banner', '');
+                            $default_banner_url = $default_banner_id ? wp_get_attachment_image_url($default_banner_id, 'medium') : '';
+                            ?>
+                            <div class="event-show-image-upload">
+                                <input type="hidden" id="event_show_default_banner" name="event_show_default_banner" value="<?php echo esc_attr($default_banner_id); ?>">
+                                <div class="event-show-image-preview" <?php if ($default_banner_url) echo 'style="display:block;"'; ?>>
+                                    <img src="<?php echo esc_url($default_banner_url); ?>" style="max-width: 300px; height: auto; display: block; margin-bottom: 10px;">
+                                </div>
+                                <button type="button" class="button event-show-upload-image-btn" data-target="event_show_default_banner">
+                                    <?php esc_html_e('Seleccionar Banner', 'event-show-base'); ?>
+                                </button>
+                                <button type="button" class="button event-show-remove-image-btn" data-target="event_show_default_banner" <?php if (!$default_banner_url) echo 'style="display:none;"'; ?>>
+                                    <?php esc_html_e('Eliminar', 'event-show-base'); ?>
+                                </button>
+                            </div>
+                            <p class="description">
+                                <?php esc_html_e('Imagen que se mostrará como banner en eventos sin imagen personalizada. Se mostrará con overlay de título.', 'event-show-base'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="event_show_default_thumbnail">
+                                <?php esc_html_e('Miniatura por Defecto', 'event-show-base'); ?>
+                            </label>
+                        </th>
+                        <td>
+                            <?php
+                            $default_thumbnail_id = get_option('event_show_default_thumbnail', '');
+                            $default_thumbnail_url = $default_thumbnail_id ? wp_get_attachment_image_url($default_thumbnail_id, 'medium') : '';
+                            ?>
+                            <div class="event-show-image-upload">
+                                <input type="hidden" id="event_show_default_thumbnail" name="event_show_default_thumbnail" value="<?php echo esc_attr($default_thumbnail_id); ?>">
+                                <div class="event-show-image-preview" <?php if ($default_thumbnail_url) echo 'style="display:block;"'; ?>>
+                                    <img src="<?php echo esc_url($default_thumbnail_url); ?>" style="max-width: 300px; height: auto; display: block; margin-bottom: 10px;">
+                                </div>
+                                <button type="button" class="button event-show-upload-image-btn" data-target="event_show_default_thumbnail">
+                                    <?php esc_html_e('Seleccionar Miniatura', 'event-show-base'); ?>
+                                </button>
+                                <button type="button" class="button event-show-remove-image-btn" data-target="event_show_default_thumbnail" <?php if (!$default_thumbnail_url) echo 'style="display:none;"'; ?>>
+                                    <?php esc_html_e('Eliminar', 'event-show-base'); ?>
+                                </button>
+                            </div>
+                            <p class="description">
+                                <?php esc_html_e('Imagen que se mostrará en las vistas de eventos (grid, slider, etc.) para eventos sin miniatura.', 'event-show-base'); ?>
                             </p>
                         </td>
                     </tr>
@@ -574,6 +632,51 @@ class Event_Show_Admin
                         document.getElementById('event-show-email-preview-modal').style.display = 'none';
                     }
                 });
+
+                // Media Uploader para imágenes por defecto
+                if (typeof wp !== 'undefined' && wp.media) {
+                    document.querySelectorAll('.event-show-upload-image-btn').forEach(function(btn) {
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            var targetInput = btn.getAttribute('data-target');
+                            var frame = wp.media({
+                                title: 'Seleccionar imagen',
+                                button: {
+                                    text: 'Usar esta imagen'
+                                },
+                                multiple: false
+                            });
+
+                            frame.on('select', function() {
+                                var attachment = frame.state().get('selection').first().toJSON();
+                                document.getElementById(targetInput).value = attachment.id;
+                                var preview = btn.parentElement.querySelector('.event-show-image-preview');
+                                if (preview) {
+                                    preview.querySelector('img').src = attachment.url;
+                                    preview.style.display = 'block';
+                                }
+                                var removeBtn = btn.parentElement.querySelector('.event-show-remove-image-btn');
+                                if (removeBtn) removeBtn.style.display = 'inline-block';
+                            });
+
+                            frame.open();
+                        });
+                    });
+
+                    document.querySelectorAll('.event-show-remove-image-btn').forEach(function(btn) {
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            var targetInput = btn.getAttribute('data-target');
+                            document.getElementById(targetInput).value = '';
+                            var preview = btn.parentElement.querySelector('.event-show-image-preview');
+                            if (preview) {
+                                preview.style.display = 'none';
+                                preview.querySelector('img').src = '';
+                            }
+                            btn.style.display = 'none';
+                        });
+                    });
+                }
             });
         </script>
     <?php

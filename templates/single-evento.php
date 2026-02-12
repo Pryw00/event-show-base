@@ -122,37 +122,54 @@ $google_calendar_url = '#'; // Se generará con JavaScript si es necesario
 
 // Imagen del banner
 $banner_id = get_post_meta($event_id, '_event_banner', true);
-$banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get_the_post_thumbnail_url($event_id, 'full');
+$has_custom_banner = $banner_id && is_numeric($banner_id) && $banner_id > 0;
+
+// Determinar qué banner usar
+if ($has_custom_banner) {
+    // Usar banner personalizado del evento
+    $banner_url = wp_get_attachment_image_url($banner_id, 'full');
+} else {
+    // Intentar usar banner por defecto
+    $default_banner_id = get_option('event_show_default_banner', '');
+    if ($default_banner_id && is_numeric($default_banner_id) && $default_banner_id > 0) {
+        $banner_url = wp_get_attachment_image_url($default_banner_id, 'full');
+    } else {
+        // Si no hay banner por defecto, usar imagen destacada del post
+        $banner_url = get_the_post_thumbnail_url($event_id, 'full');
+    }
+}
 ?>
 
 <article id="event-<?php echo esc_attr($event_id); ?>" <?php post_class('event-show-single event-single-modern'); ?>>
 
     <!-- Hero Banner con información superpuesta -->
     <div class="event-hero-banner" <?php if ($banner_url) : ?>style="background-image: url('<?php echo esc_url($banner_url); ?>');" <?php endif; ?>>
-        <div class="event-hero-overlay"></div>
-        <div class="event-hero-content">
-            <div class="event-hero-info">
-                <!-- Título del evento -->
-                <h1 class="event-hero-title"><?php the_title(); ?></h1>
+        <?php if (!$has_custom_banner) : ?>
+            <div class="event-hero-overlay"></div>
+            <div class="event-hero-content">
+                <div class="event-hero-info">
+                    <!-- Título del evento -->
+                    <h1 class="event-hero-title"><?php the_title(); ?></h1>
 
-                <!-- Fecha y lugar destacados -->
-                <div class="event-hero-meta">
-                    <?php if ($event_date) : ?>
-                        <span class="event-hero-date">
-                            <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'M d')); ?>
-                            <?php if ($event_time && $event_time_indef !== '1') : ?>
-                                - <?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?>
-                            <?php endif; ?>
-                        </span>
-                    <?php endif; ?>
-                    <?php if ($lugar) : ?>
-                        <span class="event-hero-location">
-                            <?php echo esc_html($lugar_name); ?>
-                        </span>
-                    <?php endif; ?>
+                    <!-- Fecha y lugar destacados -->
+                    <div class="event-hero-meta">
+                        <?php if ($event_date) : ?>
+                            <span class="event-hero-date">
+                                <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'l, d M Y')); ?>
+                                <?php if ($event_time && $event_time_indef !== '1') : ?>
+                                    - <?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?>
+                                <?php endif; ?>
+                            </span>
+                        <?php endif; ?>
+                        <?php if ($lugar) : ?>
+                            <span class="event-hero-location">
+                                <?php echo esc_html($lugar_name); ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
-        </div>
+        <?php endif; ?>
     </div>
 
     <div class="event-content-wrapper event-two-columns">
@@ -213,7 +230,7 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                     <div class="detail-info">
                         <span class="detail-label"><?php esc_html_e('Fecha y hora', 'event-show-base'); ?></span>
                         <span class="detail-value">
-                            <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'M d')); ?>
+                            <?php echo esc_html(Event_Show_Helpers::format_date($event_date, 'l, d M Y')); ?>
                             <?php if ($event_time && $event_time_indef !== '1') : ?>
                                 - <?php echo esc_html(Event_Show_Helpers::format_time($event_time, 'H:i')); ?>
                             <?php endif; ?>
@@ -281,9 +298,6 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                     echo $content;
                     ?>
                 </div>
-                <button class="event-read-more-btn" id="toggleDescription">
-                    <?php esc_html_e('Ver más', 'event-show-base'); ?>
-                </button>
             </div>
 
             <!-- Organizador detallado -->
@@ -299,22 +313,22 @@ $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'full') : get
                             <span class="organizer-published-by"><?php esc_html_e('Publicado por', 'event-show-base'); ?></span>
                             <strong class="organizer-name-large"><?php echo esc_html($organizador_name); ?></strong>
                             <?php if ($organizador_phone) : ?>
-                                <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?>" target="_blank" title="WhatsApp" style="margin-left:6px;"><span class="dashicons dashicons-whatsapp"></span> <?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?></a>
+                                <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?>" target="_blank" title="WhatsApp"><span class="dashicons dashicons-whatsapp"></span> <?php echo preg_replace('/[^0-9]/', '', $organizador_phone); ?></a>
                             <?php endif; ?>
                             <?php if ($organizador_email) : ?>
-                                <a href="mailto:<?php echo esc_attr($organizador_email); ?>" title="Email" style="margin-left:6px;"><span class="dashicons dashicons-email"></span> <?php esc_html_e('Enviar email', 'event-show-base'); ?></a>
+                                <a href="mailto:<?php echo esc_attr($organizador_email); ?>" title="Email" ><span class="dashicons dashicons-email"></span> <?php esc_html_e('Enviar email', 'event-show-base'); ?></a>
                             <?php endif; ?>
                             <?php if ($organizador_website) : ?>
-                                <a href="<?php echo esc_url($organizador_website); ?>" target="_blank" title="Web" style="margin-left:6px;"><span class="dashicons dashicons-admin-site"></span> Website</a>
+                                <a href="<?php echo esc_url($organizador_website); ?>" target="_blank" title="Web" ><span class="dashicons dashicons-admin-site"></span> Website</a>
                             <?php endif; ?>
                             <?php if ($organizador_facebook) : ?>
-                                <a href="<?php echo esc_url($organizador_facebook); ?>" target="_blank" title="Facebook" style="margin-left:6px;"><span class="dashicons dashicons-facebook"></span> Facebook</a>
+                                <a href="<?php echo esc_url($organizador_facebook); ?>" target="_blank" title="Facebook" ><span class="dashicons dashicons-facebook"></span> Facebook</a>
                             <?php endif; ?>
                             <?php if ($organizador_instagram) : ?>
-                                <a href="<?php echo esc_url($organizador_instagram); ?>" target="_blank" title="Instagram" style="margin-left:6px;"><span class="dashicons dashicons-instagram"></span> Instagram</a>
+                                <a href="<?php echo esc_url($organizador_instagram); ?>" target="_blank" title="Instagram" ><span class="dashicons dashicons-instagram"></span> Instagram</a>
                             <?php endif; ?>
                             <?php if ($organizador_twitter) : ?>
-                                <a href="<?php echo esc_url($organizador_twitter); ?>" target="_blank" title="Twitter" style="margin-left:6px;"><span class="dashicons dashicons-twitter"></span> Twitter</a>
+                                <a href="<?php echo esc_url($organizador_twitter); ?>" target="_blank" title="Twitter"><span class="dashicons dashicons-twitter"></span> Twitter</a>
                             <?php endif; ?>
                         </div>
                     </div>

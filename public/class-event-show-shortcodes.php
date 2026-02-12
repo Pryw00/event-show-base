@@ -370,7 +370,9 @@ class Event_Show_Shortcodes
             if ($organizador_image) {
                 $organizer_avatar = wp_get_attachment_image($organizador_image, 'thumbnail', false, array('class' => 'organizer-avatar', 'style' => 'border-radius:50%;width:64px;height:64px;object-fit:cover;'));
             } else {
-                $organizer_avatar = '<span class="dashicons dashicons-businessperson" style="font-size:48px;color:#888;"></span>';
+                $organizer_avatar = '<span class="dashicons dashicons-businessperson" style="font-size:48px;color: #ffffff;
+    margin-left: -29px;
+    margin-top: -8px;"></span>';
             }
 
             // Si hay al menos nombre, email o teléfono, mostrar la tarjeta
@@ -398,8 +400,8 @@ class Event_Show_Shortcodes
                 return '<div class="event-organizer-contact-card" style="box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:24px 20px 18px 20px;border-radius:12px;max-width:400px;margin:0 auto 24px auto;text-align:center;">'
                     . '<div style="margin-bottom:12px;">' . $organizer_avatar . '</div>'
                     . ($organizador_name ? '<div style="font-size:18px;font-weight:600;margin-bottom:8px;">' . esc_html($organizador_name) . '</div>' : '')
-                    . '<div style="font-size:14px;margin-bottom:12px;color:#666;">' . esc_html__('Para registrarte en este evento, contacta directamente con el organizador.', 'event-show-base') . '</div>'
-                    . ($contact_buttons ? '<div style="margin-top:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;">' . $contact_buttons . '</div>' : '')
+                    . '<div style="font-size:14px;margin-bottom:12px;color:#fff;">' . esc_html__('Para registrarte en este evento, contacta directamente con el organizador.', 'event-show-base') . '</div>'
+                    . ($contact_buttons ? '<div style="margin-top:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;flex-direction: column;">' . $contact_buttons . '</div>' : '')
                     . '</div>';
             } else {
                 // Si no hay datos del organizador, solo mostrar el mensaje genérico

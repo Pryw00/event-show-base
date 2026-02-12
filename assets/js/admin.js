@@ -93,7 +93,7 @@
         $(".event-thumbnail-preview").html(
           '<img src="' +
             attachment.url +
-            '" style="max-width: 100%; height: auto;">'
+            '" style="max-width: 100%; height: auto;">',
         );
         $(".event-remove-thumbnail").show();
       });
@@ -106,7 +106,47 @@
       e.preventDefault();
       $("#event_thumbnail").val("");
       $(".event-thumbnail-preview").html(
-        '<p class="description">No hay miniatura seleccionada</p>'
+        '<p class="description">No hay miniatura seleccionada</p>',
+      );
+      $(this).hide();
+    });
+
+    // Imagen banner del evento
+    $(document).on("click", ".event-upload-banner", function (e) {
+      e.preventDefault();
+
+      mediaUploader = wp.media.frames.file_frame = wp.media({
+        title: "Seleccionar banner del evento",
+        button: {
+          text: "Usar esta imagen",
+        },
+        multiple: false,
+      });
+
+      mediaUploader.on("select", function () {
+        var attachment = mediaUploader
+          .state()
+          .get("selection")
+          .first()
+          .toJSON();
+        $("#event_banner").val(attachment.id);
+        $(".event-banner-preview").html(
+          '<img src="' +
+            attachment.url +
+            '" style="max-width: 100%; height: auto;">',
+        );
+        $(".event-remove-banner").show();
+      });
+
+      mediaUploader.open();
+    });
+
+    // Remover banner del evento
+    $(document).on("click", ".event-remove-banner", function (e) {
+      e.preventDefault();
+      $("#event_banner").val("");
+      $(".event-banner-preview").html(
+        '<p class="description">No hay banner seleccionado</p>',
       );
       $(this).hide();
     });
@@ -272,7 +312,7 @@
         $(".organizador-image-preview").html(
           '<img src="' +
             attachment.url +
-            '" style="max-width: 150px; height: auto; margin-top: 10px;">'
+            '" style="max-width: 150px; height: auto; margin-top: 10px;">',
         );
         $(".organizador-remove-image").show();
       });
@@ -312,7 +352,7 @@
         $(".lugar-image-preview").html(
           '<img src="' +
             attachment.url +
-            '" style="max-width: 150px; height: auto; margin-top: 10px;">'
+            '" style="max-width: 150px; height: auto; margin-top: 10px;">',
         );
         $(".lugar-remove-image").show();
       });

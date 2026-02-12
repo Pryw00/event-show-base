@@ -19,6 +19,12 @@
                 $event_date = get_post_meta($event_id, '_event_date', true);
                 $event_time = get_post_meta($event_id, '_event_time', true);
                 $thumbnail_id = get_post_meta($event_id, '_event_thumbnail', true);
+                
+                // Si no tiene miniatura personalizada, usar la miniatura por defecto
+                if (!$thumbnail_id) {
+                    $thumbnail_id = get_option('event_show_default_thumbnail', '');
+                }
+                
                 $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : get_the_post_thumbnail_url($event_id, 'medium');
 
                 $organizador = Event_Show_Helpers::get_event_organizer($event_id);
