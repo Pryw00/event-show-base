@@ -56,7 +56,7 @@ class Event_Show_Admin
     {
         check_ajax_referer('event_show_admin_nonce', 'nonce');
 
-        if (!current_user_can('manage_options')) {
+        if (!Event_Show_Permissions::can_manage_settings()) {
             wp_send_json(['success' => false, 'error' => 'No autorizado']);
         }
         $type = isset($_POST['template_type']) ? sanitize_text_field($_POST['template_type']) : '';
@@ -108,7 +108,7 @@ class Event_Show_Admin
      */
     public function user_organizador_fields($user)
     {
-        if (!current_user_can('edit_users')) return;
+        if (!Event_Show_Permissions::can_edit_organizer() && !current_user_can('edit_users')) return;
         $user_organizadores = get_user_meta($user->ID, 'organizador_ids', true);
         if (!is_array($user_organizadores)) $user_organizadores = array();
         $terms = get_terms(array(
@@ -139,7 +139,7 @@ class Event_Show_Admin
      */
     public function save_user_organizador_fields($user_id)
     {
-        if (!current_user_can('edit_users')) return;
+        if (!Event_Show_Permissions::can_edit_organizer() && !current_user_can('edit_users')) return;
         if (isset($_POST['organizador_ids'])) {
             $ids = array_map('intval', (array)$_POST['organizador_ids']);
             update_user_meta($user_id, 'organizador_ids', $ids);
@@ -156,7 +156,7 @@ class Event_Show_Admin
             'edit.php?post_type=evento',
             __('Configuración', 'event-show-base'),
             __('Configuración', 'event-show-base'),
-            'manage_options',
+            Event_Show_Permissions::can_manage_settings() ? 'read' : 'manage_options',
             'event-show-settings',
             array($this, 'render_settings_page')
         );
@@ -165,7 +165,7 @@ class Event_Show_Admin
             'edit.php?post_type=evento',
             __('Logs del Sistema', 'event-show-base'),
             __('Logs', 'event-show-base'),
-            'manage_options',
+            Event_Show_Permissions::can_view_logs() ? 'read' : 'manage_options',
             'event-show-logs',
             array($this, 'render_logs_page')
         );
@@ -174,7 +174,7 @@ class Event_Show_Admin
             'edit.php?post_type=evento',
             __('Asistentes', 'event-show-base'),
             __('Asistentes', 'event-show-base'),
-            'edit_posts',
+            Event_Show_Permissions::can_view_attendees() ? 'read' : 'edit_posts',
             'event-show-attendees',
             array($this, 'render_attendees_page')
         );
@@ -191,7 +191,7 @@ class Event_Show_Admin
             'edit.php?post_type=evento',
             __('Aprobar Organizadores', 'event-show-base'),
             $menu_title,
-            'manage_options',
+            Event_Show_Permissions::can_approve_organizer() ? 'read' : 'manage_options',
             'event-show-approve-organizers',
             array($this, 'render_approve_organizers_page')
         );
@@ -242,8 +242,6 @@ class Event_Show_Admin
         register_setting('event_show_settings', 'event_show_events_per_page');
         register_setting('event_show_settings', 'event_show_date_format');
         register_setting('event_show_settings', 'event_show_time_format');
-        register_setting('event_show_settings', 'event_show_default_banner');
-        register_setting('event_show_settings', 'event_show_default_thumbnail');
     }
 
     /**
@@ -251,6 +249,10 @@ class Event_Show_Admin
      */
     public function render_settings_page()
     {
+        if (! Event_Show_Permissions::can_manage_settings()) {
+            wp_die(__('No tienes permisos para acceder a esta página.', 'event-show-base'));
+        }
+
         // Etiquetas disponibles
         $tags = [
             '{{Titulo evento}}' => 'Título del evento',
@@ -479,62 +481,6 @@ class Event_Show_Admin
                             </p>
                         </td>
                     </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="event_show_default_banner">
-                                <?php esc_html_e('Banner por Defecto', 'event-show-base'); ?>
-                            </label>
-                        </th>
-                        <td>
-                            <?php
-                            $default_banner_id = get_option('event_show_default_banner', '');
-                            $default_banner_url = $default_banner_id ? wp_get_attachment_image_url($default_banner_id, 'medium') : '';
-                            ?>
-                            <div class="event-show-image-upload">
-                                <input type="hidden" id="event_show_default_banner" name="event_show_default_banner" value="<?php echo esc_attr($default_banner_id); ?>">
-                                <div class="event-show-image-preview" <?php if ($default_banner_url) echo 'style="display:block;"'; ?>>
-                                    <img src="<?php echo esc_url($default_banner_url); ?>" style="max-width: 300px; height: auto; display: block; margin-bottom: 10px;">
-                                </div>
-                                <button type="button" class="button event-show-upload-image-btn" data-target="event_show_default_banner">
-                                    <?php esc_html_e('Seleccionar Banner', 'event-show-base'); ?>
-                                </button>
-                                <button type="button" class="button event-show-remove-image-btn" data-target="event_show_default_banner" <?php if (!$default_banner_url) echo 'style="display:none;"'; ?>>
-                                    <?php esc_html_e('Eliminar', 'event-show-base'); ?>
-                                </button>
-                            </div>
-                            <p class="description">
-                                <?php esc_html_e('Imagen que se mostrará como banner en eventos sin imagen personalizada. Se mostrará con overlay de título.', 'event-show-base'); ?>
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="event_show_default_thumbnail">
-                                <?php esc_html_e('Miniatura por Defecto', 'event-show-base'); ?>
-                            </label>
-                        </th>
-                        <td>
-                            <?php
-                            $default_thumbnail_id = get_option('event_show_default_thumbnail', '');
-                            $default_thumbnail_url = $default_thumbnail_id ? wp_get_attachment_image_url($default_thumbnail_id, 'medium') : '';
-                            ?>
-                            <div class="event-show-image-upload">
-                                <input type="hidden" id="event_show_default_thumbnail" name="event_show_default_thumbnail" value="<?php echo esc_attr($default_thumbnail_id); ?>">
-                                <div class="event-show-image-preview" <?php if ($default_thumbnail_url) echo 'style="display:block;"'; ?>>
-                                    <img src="<?php echo esc_url($default_thumbnail_url); ?>" style="max-width: 300px; height: auto; display: block; margin-bottom: 10px;">
-                                </div>
-                                <button type="button" class="button event-show-upload-image-btn" data-target="event_show_default_thumbnail">
-                                    <?php esc_html_e('Seleccionar Miniatura', 'event-show-base'); ?>
-                                </button>
-                                <button type="button" class="button event-show-remove-image-btn" data-target="event_show_default_thumbnail" <?php if (!$default_thumbnail_url) echo 'style="display:none;"'; ?>>
-                                    <?php esc_html_e('Eliminar', 'event-show-base'); ?>
-                                </button>
-                            </div>
-                            <p class="description">
-                                <?php esc_html_e('Imagen que se mostrará en las vistas de eventos (grid, slider, etc.) para eventos sin miniatura.', 'event-show-base'); ?>
-                            </p>
-                        </td>
-                    </tr>
                 </table>
                 <?php submit_button(); ?>
             </form>
@@ -632,51 +578,6 @@ class Event_Show_Admin
                         document.getElementById('event-show-email-preview-modal').style.display = 'none';
                     }
                 });
-
-                // Media Uploader para imágenes por defecto
-                if (typeof wp !== 'undefined' && wp.media) {
-                    document.querySelectorAll('.event-show-upload-image-btn').forEach(function(btn) {
-                        btn.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            var targetInput = btn.getAttribute('data-target');
-                            var frame = wp.media({
-                                title: 'Seleccionar imagen',
-                                button: {
-                                    text: 'Usar esta imagen'
-                                },
-                                multiple: false
-                            });
-
-                            frame.on('select', function() {
-                                var attachment = frame.state().get('selection').first().toJSON();
-                                document.getElementById(targetInput).value = attachment.id;
-                                var preview = btn.parentElement.querySelector('.event-show-image-preview');
-                                if (preview) {
-                                    preview.querySelector('img').src = attachment.url;
-                                    preview.style.display = 'block';
-                                }
-                                var removeBtn = btn.parentElement.querySelector('.event-show-remove-image-btn');
-                                if (removeBtn) removeBtn.style.display = 'inline-block';
-                            });
-
-                            frame.open();
-                        });
-                    });
-
-                    document.querySelectorAll('.event-show-remove-image-btn').forEach(function(btn) {
-                        btn.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            var targetInput = btn.getAttribute('data-target');
-                            document.getElementById(targetInput).value = '';
-                            var preview = btn.parentElement.querySelector('.event-show-image-preview');
-                            if (preview) {
-                                preview.style.display = 'none';
-                                preview.querySelector('img').src = '';
-                            }
-                            btn.style.display = 'none';
-                        });
-                    });
-                }
             });
         </script>
     <?php
@@ -1159,8 +1060,8 @@ class Event_Show_Admin
             wp_die(__('ID de evento inválido', 'event-show-base'));
         }
 
-        // Si es usuario frontend, verificar que sea el autor del evento
-        if (!current_user_can('edit_posts')) {
+        // Si es usuario frontend, verificar que sea el autor del evento o tenga permisos
+        if (!Event_Show_Permissions::can_export_attendees()) {
             if (!is_user_logged_in()) {
                 wp_die(__('Debes iniciar sesión', 'event-show-base'));
             }
@@ -1181,7 +1082,7 @@ class Event_Show_Admin
     {
         check_ajax_referer('event_show_admin_nonce', 'nonce');
 
-        if (! current_user_can('edit_posts')) {
+        if (! Event_Show_Permissions::can_delete_attendee()) {
             wp_send_json_error(__('Permisos insuficientes', 'event-show-base'));
         }
 

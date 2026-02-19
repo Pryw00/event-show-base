@@ -47,9 +47,10 @@ class Event_Show_Integrations
         add_action('save_post_evento', array($this, 'save_lugar_metabox'), 10, 2);
         add_filter('event_show_evento_data', array($this, 'add_lugar_to_evento_data'), 10, 2);
 
-        // Auto-publicación por roles (siempre disponible)
-        // Funciona con roles nativos de WordPress y roles personalizados (incluye Access Control)
-        add_filter('wp_insert_post_data', array($this, 'auto_publish_by_role'), 10, 2);
+        // Integración con Advanced Role Manager (Auto-publicación)
+        if ($this->is_arm_active()) {
+            add_filter('wp_insert_post_data', array($this, 'auto_publish_by_role'), 10, 2);
+        }
 
         // Hook para que otros plugins puedan extender las integraciones
         do_action('event_show_integrations_loaded', $this);
@@ -324,11 +325,17 @@ class Event_Show_Integrations
                     do_action('event_show_organizer_assigned', $post_id, $organizer_value, $tipo, $id);
 
                     // Logging
-                    Event_Show_Logger::log(
+                    Event_Show_Logger::log_activity(
                         'organizer_assigned',
-                        'evento',
-                        $post_id,
-                        sprintf(__('Organizador asignado al evento #%d: %s (%s)', 'event-show-base'), $post_id, $organizer_title, $tipo)
+                        $current_user_id,
+                        sprintf(__('Organizador asignado al evento #%d: %s (%s)', 'event-show-base'), $post_id, $organizer_title, $tipo),
+                        array(
+                            'event_id'         => $post_id,
+                            'organizer_value'  => $organizer_value,
+                            'organizer_type'   => $tipo,
+                            'organizer_ref_id' => $id,
+                            'organizer_title'  => $organizer_title,
+                        )
                     );
                 }
             } else {
@@ -577,11 +584,17 @@ class Event_Show_Integrations
                     update_post_meta($post_id, '_event_lugar_ref_id', $id);
 
                     // Logging
-                    Event_Show_Logger::log(
+                    Event_Show_Logger::log_activity(
                         'lugar_assigned',
-                        'evento',
-                        $post_id,
-                        sprintf(__('Lugar asignado al evento #%d: %s (%s)', 'event-show-base'), $post_id, $lugar_title, $tipo)
+                        get_current_user_id(),
+                        sprintf(__('Lugar asignado al evento #%d: %s (%s)', 'event-show-base'), $post_id, $lugar_title, $tipo),
+                        array(
+                            'event_id'       => $post_id,
+                            'lugar_value'    => $lugar_value,
+                            'lugar_type'     => $tipo,
+                            'lugar_ref_id'   => $id,
+                            'lugar_title'    => $lugar_title,
+                        )
                     );
                 }
             } else {
@@ -672,26 +685,10 @@ class Event_Show_Integrations
 
         // Verificar si el usuario actual puede auto-publicar
         if ($this->user_can_auto_publish_events()) {
-            $original_status = $data['post_status'];
             $data['post_status'] = 'publish';
 
-            $user = wp_get_current_user();
-            $user_roles = implode(', ', $user->roles);
-            
-            // Logging detallado
-            Event_Show_Logger::log(
-                'event_auto_published',
-                'evento',
-                isset($postarr['ID']) ? $postarr['ID'] : 0,
-                sprintf(
-                    __('Evento auto-publicado por usuario con roles: %s (estado original: %s)', 'event-show-base'),
-                    $user_roles,
-                    $original_status
-                )
-            );
-
             // Hook para notificar que un evento se auto-publicó
-            do_action('event_show_auto_published', isset($postarr['ID']) ? $postarr['ID'] : 0, get_current_user_id());
+            do_action('event_show_auto_published', $postarr['ID'], get_current_user_id());
         }
 
         return $data;
@@ -704,43 +701,25 @@ class Event_Show_Integrations
      */
     public function user_can_auto_publish_events()
     {
-        $user = wp_get_current_user();
-        
-        // Si el usuario no está logueado, no puede auto-publicar
-        if (!$user || !$user->ID) {
-            return false;
-        }
-
         // Si el usuario puede publicar posts, puede auto-publicar eventos
         if (current_user_can('publish_posts')) {
-            return apply_filters('event_show_user_can_auto_publish', true, $user, 'publish_posts');
-        }
-
-        // Verificar si "Requerir Aprobación" está desactivado
-        $require_approval = get_option('event_show_require_approval', true);
-        if (!$require_approval) {
-            // Si no se requiere aprobación, todos pueden auto-publicar
-            return apply_filters('event_show_user_can_auto_publish', true, $user, 'no_approval_required');
+            return true;
         }
 
         // Obtener roles permitidos desde la configuración
         $allowed_roles = get_option('event_show_auto_publish_roles', array());
 
         if (empty($allowed_roles)) {
-            // Si no hay roles configurados, por defecto solo admin y editor
-            return apply_filters('event_show_user_can_auto_publish', false, $user, null);
+            // Roles predeterminados que pueden auto-publicar
+            $allowed_roles = array('administrator', 'editor', 'event_manager');
         }
 
         // Verificar si el usuario tiene alguno de los roles permitidos
-        foreach ($allowed_roles as $allowed_role) {
-            if (in_array($allowed_role, (array) $user->roles)) {
-                Event_Show_Logger::log(
-                    'auto_publish_granted',
-                    'user',
-                    $user->ID,
-                    sprintf(__('Usuario con rol "%s" puede auto-publicar eventos', 'event-show-base'), $allowed_role)
-                );
-                return apply_filters('event_show_user_can_auto_publish', true, $user, $allowed_role);
+        $user = wp_get_current_user();
+
+        foreach ($allowed_roles as $role) {
+            if (in_array($role, (array) $user->roles)) {
+                return apply_filters('event_show_user_can_auto_publish', true, $user, $role);
             }
         }
 

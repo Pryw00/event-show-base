@@ -62,8 +62,8 @@ class Event_Show_Metaboxes
             'default'
         );
 
-        // Metabox de autor (solo para administradores)
-        if (current_user_can('edit_others_posts')) {
+        // Metabox de autor (solo para usuarios con permisos de edición avanzados)
+        if (Event_Show_Permissions::can_approve_event() || user_can(get_current_user_id(), 'edit_others_eventos')) {
             add_meta_box(
                 'event_show_author',
                 __('Autor del Evento', 'event-show-base'),
@@ -331,7 +331,8 @@ class Event_Show_Metaboxes
         }
 
         // Verificar permisos
-        if (! current_user_can('edit_post', $post_id)) {
+        // Verificar permisos usando el sistema de capacidades
+        if (! Event_Show_Permissions::can_edit_event($post_id)) {
             return;
         }
 
@@ -431,27 +432,29 @@ class Event_Show_Metaboxes
             }
         }
 
-        // Cambiar autor del evento (solo administradores)
-        if (current_user_can('edit_others_posts') && isset($_POST['event_author'])) {
-            $new_author_id = absint($_POST['event_author']);
-            if ($new_author_id && $new_author_id !== $post->post_author) {
-                // Remover el hook temporalmente para evitar bucle infinito
-                remove_action('save_post_evento', array($this, 'save_metabox_data'), 10);
+        // Guardar autor (solo si tiene permisos)
+        if (Event_Show_Permissions::can_approve_event() || user_can(get_current_user_id(), 'edit_others_eventos')) {
+            if (isset($_POST['event_author'])) {
+                $new_author_id = absint($_POST['event_author']);
+                if ($new_author_id && $new_author_id !== $post->post_author) {
+                    // Remover el hook temporalmente para evitar bucle infinito
+                    remove_action('save_post_evento', array($this, 'save_metabox_data'), 10);
 
-                wp_update_post(array(
-                    'ID' => $post_id,
-                    'post_author' => $new_author_id,
-                ));
+                    wp_update_post(array(
+                        'ID' => $post_id,
+                        'post_author' => $new_author_id,
+                    ));
 
-                // Volver a agregar el hook
-                add_action('save_post_evento', array($this, 'save_metabox_data'), 10, 2);
+                    // Volver a agregar el hook
+                    add_action('save_post_evento', array($this, 'save_metabox_data'), 10, 2);
 
-                Event_Show_Logger::log(
-                    'change_event_author',
-                    'evento',
-                    $post_id,
-                    sprintf(__('Autor del evento "%s" cambiado al usuario ID: %d', 'event-show-base'), get_the_title($post_id), $new_author_id)
-                );
+                    Event_Show_Logger::log(
+                        'change_event_author',
+                        'evento',
+                        $post_id,
+                        sprintf(__('Autor del evento "%s" cambiado al usuario ID: %d', 'event-show-base'), get_the_title($post_id), $new_author_id)
+                    );
+                }
             }
         }
 

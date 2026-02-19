@@ -5,6 +5,71 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.2.11] - 2026-02-19
+
+### Añadido
+
+#### Integración con Simple Access Control
+
+- Sistema completo de control de acceso integrado con Advanced Role Manager (ARM)
+- Nueva clase `Event_Show_Permissions` para verificación de permisos centralizada
+- 16 capacidades personalizadas organizadas en 4 categorías:
+  - **Eventos**: `create_eventos`, `edit_eventos`, `edit_others_eventos`, `delete_eventos`, `delete_others_eventos`, `approve_eventos`, `reject_eventos`
+  - **Organizadores**: `create_organizadores`, `edit_organizadores`, `delete_organizadores`, `approve_organizadores`, `manage_organizador_terms`
+  - **Asistentes**: `view_event_attendees`, `manage_event_attendees`, `export_event_attendees`, `delete_event_attendees`
+  - **Sistema**: `view_event_show_logs`, `manage_event_show_settings`, `manage_event_taxonomies`
+- Hook de filtro `event_show_check_permission` para integración con plugins de control de acceso
+- 16 métodos estáticos de verificación de permisos:
+  - `can_create_event()` - Verificar creación de eventos
+  - `can_edit_event()` - Verificar edición (con lógica jerárquica)
+  - `can_delete_event()` - Verificar eliminación (con lógica jerárquica)
+  - `can_approve_event()` - Verificar aprobación
+  - `can_reject_event()` - Verificar rechazo
+  - `can_create_organizer()` - Verificar creación de organizadores
+  - `can_edit_organizer()` - Verificar edición de organizadores
+  - `can_delete_organizer()` - Verificar eliminación de organizadores
+  - `can_approve_organizer()` - Verificar aprobación de organizadores
+  - `can_view_attendees()` - Verificar visualización de asistentes
+  - `can_manage_attendees()` - Verificar gestión de asistentes
+  - `can_export_attendees()` - Verificar exportación de asistentes
+  - `can_delete_attendee()` - Verificar eliminación de asistentes
+  - `can_view_logs()` - Verificar acceso a logs
+  - `can_manage_settings()` - Verificar gestión de configuración
+  - `can_manage_taxonomies()` - Verificar gestión de taxonomías
+- Filtrado automático de consultas WP_Query por permisos en el área de administración
+- Documentación completa de integración en `INTEGRATION-ACCESS-CONTROL.md`
+
+### Modificado
+
+#### Permisos Actualizados
+
+- **Admin** (`class-event-show-admin.php`):
+  - `ajax_send_test_email()` - Ahora usa `can_manage_settings()`
+  - `user_organizador_fields()` - Ahora usa `can_edit_organizer()`
+  - `save_user_organizador_fields()` - Ahora usa `can_edit_organizer()`
+  - Menú "Todos los Eventos" - Ahora usa `edit_eventos`
+  - Menú "Asistentes" - Ahora usa `view_event_attendees`
+  - Menú "Ajustes" - Ahora usa `manage_event_show_settings`
+  - `render_settings_page()` - Añadida verificación de `can_manage_settings()`
+  - `ajax_export_attendees()` - Ahora usa `can_export_attendees()`
+  - `ajax_delete_attendee()` - Ahora usa `can_delete_attendee()`
+- **Metaboxes** (`class-event-show-metaboxes.php`):
+  - Visibilidad de metabox "Autor" - Ahora usa `can_approve_event()`
+  - `save_metabox_data()` - Verificación de edición usa `can_edit_event()`
+  - `save_metabox_data()` - Verificación de aprobación usa `can_approve_event()`
+  - Guardado de cambio de autor - Ahora usa `can_approve_event()`
+- **AJAX Público** (`class-event-show-ajax.php`):
+  - `submit_event()` - Estado de publicación determina por `can_approve_event()`
+  - Validación de establecimiento - Ahora usa `can_approve_event()`
+
+### Mejorado
+
+- Retrocompatibilidad mantenida con `current_user_can('manage_options')` como fallback
+- Lógica jerárquica de permisos (usuarios pueden editar/eliminar sus propios eventos)
+- Integración fluida con el sistema de roles y capacidades de WordPress
+- Control de acceso granular para todas las operaciones del plugin
+- Sugerencias de 4 roles predefinidos en la documentación (Administrador de Eventos, Editor de Eventos, Organizador, Revisor de Eventos)
+
 ## [1.0.0] - 2024-01-01
 
 ### Añadido
