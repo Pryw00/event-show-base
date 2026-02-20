@@ -128,6 +128,9 @@ class Event_Show_Ajax
         // Paginación AJAX
         add_action('wp_ajax_event_show_load_more', array($this, 'load_more_events'));
         add_action('wp_ajax_nopriv_event_show_load_more', array($this, 'load_more_events'));
+
+        // Obtener datos de establecimiento
+        add_action('wp_ajax_event_show_get_establecimiento_data', array($this, 'get_establecimiento_data'));
     }
 
     /**
@@ -206,8 +209,13 @@ class Event_Show_Ajax
         $event_time_end = isset($_POST['event_time_end']) ? sanitize_text_field($_POST['event_time_end']) : '';
         $category = isset($_POST['category']) ? absint($_POST['category']) : 0;
         $age_rating = isset($_POST['age_rating']) ? absint($_POST['age_rating']) : 0;
+
+        // Manejar ambos tipos de organizador: establecimiento (organizer_id) o taxonomía (organizer)
         $organizer_id = isset($_POST['organizer_id']) ? absint($_POST['organizer_id']) : 0;
+        $organizer_term = isset($_POST['organizer']) ? absint($_POST['organizer']) : 0;
+
         $location = isset($_POST['location']) ? absint($_POST['location']) : 0;
+        $location_establecimiento_id = isset($_POST['location_establecimiento_id']) ? absint($_POST['location_establecimiento_id']) : 0;
 
         // Procesar imágenes obligatorias
         $banner_id = '';
@@ -260,10 +268,10 @@ class Event_Show_Ajax
 
         // Validar que sea al menos 5 días en el futuro
         $min_days = get_option('event_show_min_days_advance', 5);
-        $event_timestamp = strtotime(str_replace('/', '-', $event_date));
+        $event_timestamp = Event_Show_Helpers::date_to_timestamp($event_date);
         $min_timestamp = strtotime("+{$min_days} days");
 
-        if ($event_timestamp < $min_timestamp) {
+        if ($event_timestamp === false || $event_timestamp < $min_timestamp) {
             wp_send_json_error(array(
                 'message' => sprintf(
                     __('El evento debe programarse con al menos %d días de anticipación', 'event-show-base'),
@@ -281,6 +289,10 @@ class Event_Show_Ajax
         if (Event_Show_Permissions::can_approve_event()) {
             $post_status = 'publish';
         }
+
+        // Remover temporalmente los hooks save_post_evento para evitar conflictos
+        // durante la creación via AJAX
+        remove_all_actions('save_post_evento');
 
         // Crear el evento
         $post_data = array(
@@ -304,10 +316,14 @@ class Event_Show_Ajax
         $final_status = $final_post->post_status;
 
         // Guardar metadatos
-        update_post_meta($event_id, '_event_date', $event_date);
-        update_post_meta($event_id, '_event_time', $event_time);
-        update_post_meta($event_id, '_event_date_end', $event_date_end);
-        update_post_meta($event_id, '_event_time_end', $event_time_end);
+        if (!empty($event_date)) {
+            update_post_meta($event_id, '_event_date', $event_date);
+        }
+        if (!empty($event_time)) {
+            update_post_meta($event_id, '_event_time', $event_time);
+        }
+        update_post_meta($event_id, '_event_end_date', $event_date_end);
+        update_post_meta($event_id, '_event_end_time', $event_time_end);
         update_post_meta($event_id, '_event_banner', $banner_id);
         update_post_meta($event_id, '_event_thumbnail', $thumb_id);
         update_post_meta($event_id, '_use_default_template', '1');
@@ -332,7 +348,11 @@ class Event_Show_Ajax
 
                 // Verificar que el usuario sea propietario o tenga permisos
                 if (Event_Show_Permissions::can_approve_event() || (int)$establecimiento->post_author === $current_user_id) {
-                    update_post_meta($event_id, '_event_organizer_id', $organizer_id);
+                    // Guardar en el formato que espera el sistema de integrations
+                    $organizer_value = 'establecimiento_' . $organizer_id;
+                    update_post_meta($event_id, '_event_organizer_id', $organizer_value);
+                    update_post_meta($event_id, '_event_organizer_type', 'establecimiento');
+                    update_post_meta($event_id, '_event_organizer_ref_id', $organizer_id);
                 } else {
                     // Usuario intentó asignar un establecimiento que no le pertenece
                     wp_delete_post($event_id, true);
@@ -341,10 +361,45 @@ class Event_Show_Ajax
                     ));
                 }
             }
+        } elseif ($organizer_term) {
+            // Si no hay establecimiento pero hay organizador como taxonomía, asignarlo
+            $organizador_term_data = get_term($organizer_term, 'organizador');
+
+            if ($organizador_term_data && !is_wp_error($organizador_term_data)) {
+                $organizer_value = 'taxonomy_' . $organizer_term;
+                update_post_meta($event_id, '_event_organizer_id', $organizer_value);
+                update_post_meta($event_id, '_event_organizer_type', 'taxonomy');
+                update_post_meta($event_id, '_event_organizer_ref_id', $organizer_term);
+
+                // También asignar la taxonomía para compatibilidad
+                wp_set_post_terms($event_id, array($organizer_term), 'organizador');
+            }
         }
 
         if ($location) {
-            wp_set_post_terms($event_id, array($location), 'lugar');
+            // El lugar viene como term_id de la taxonomía 'lugar'
+            // Guardarlo en el formato que espera el sistema de integrations
+            $lugar_term = get_term($location, 'lugar');
+
+            if ($lugar_term && !is_wp_error($lugar_term)) {
+                $lugar_value = 'taxonomy_' . $location;
+                update_post_meta($event_id, '_event_lugar_id', $lugar_value);
+                update_post_meta($event_id, '_event_lugar_type', 'taxonomy');
+                update_post_meta($event_id, '_event_lugar_ref_id', $location);
+
+                // También asignar la taxonomía para compatibilidad
+                wp_set_post_terms($event_id, array($location), 'lugar');
+            }
+        } elseif ($location_establecimiento_id) {
+            // El usuario seleccionó usar el establecimiento como lugar
+            $establecimiento = get_post($location_establecimiento_id);
+
+            if ($establecimiento && $establecimiento->post_type === 'establecimiento') {
+                $lugar_value = 'establecimiento_' . $location_establecimiento_id;
+                update_post_meta($event_id, '_event_lugar_id', $lugar_value);
+                update_post_meta($event_id, '_event_lugar_type', 'establecimiento');
+                update_post_meta($event_id, '_event_lugar_ref_id', $location_establecimiento_id);
+            }
         }
 
         // Enviar notificación al admin
@@ -620,7 +675,11 @@ class Event_Show_Ajax
         }
 
         // Verificar que quedan al menos 7 días
-        $event_timestamp = strtotime(str_replace('/', '-', $event_date));
+        $event_timestamp = Event_Show_Helpers::date_to_timestamp($event_date);
+        if ($event_timestamp === false) {
+            wp_send_json_error(array('message' => __('Formato de fecha inválido', 'event-show-base')));
+        }
+
         $days_until_event = floor(($event_timestamp - time()) / (60 * 60 * 24));
         if ($days_until_event < 7) {
             wp_send_json_error(array('message' => __('Solo puedes editar eventos con al menos 7 días de anticipación', 'event-show-base')));
@@ -638,8 +697,12 @@ class Event_Show_Ajax
         }
 
         // Actualizar metadatos
-        update_post_meta($event_id, '_event_date', $event_date);
-        update_post_meta($event_id, '_event_time', $event_time);
+        if (!empty($event_date)) {
+            update_post_meta($event_id, '_event_date', $event_date);
+        }
+        if (!empty($event_time)) {
+            update_post_meta($event_id, '_event_time', $event_time);
+        }
         update_post_meta($event_id, '_event_end_date', $event_end_date);
         update_post_meta($event_id, '_event_end_time', $event_end_time);
         update_post_meta($event_id, '_max_attendees', $max_attendees);
@@ -983,6 +1046,46 @@ class Event_Show_Ajax
             'message' => $message,
             'term_id' => $term_id,
             'needs_approval' => !$organizer_id && !current_user_can('manage_options') && !current_user_can('edit_others_eventos'),
+        ));
+    }
+
+    /**
+     * AJAX: Obtener datos de establecimiento
+     */
+    public function get_establecimiento_data()
+    {
+        check_ajax_referer('event_show_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array(
+                'message' => __('Debes iniciar sesión', 'event-show-base'),
+            ));
+        }
+
+        $establecimiento_id = isset($_POST['establecimiento_id']) ? absint($_POST['establecimiento_id']) : 0;
+
+        if (!$establecimiento_id) {
+            wp_send_json_error(array(
+                'message' => __('ID de establecimiento inválido', 'event-show-base'),
+            ));
+        }
+
+        $establecimiento = get_post($establecimiento_id);
+
+        if (!$establecimiento || $establecimiento->post_type !== 'establecimiento') {
+            wp_send_json_error(array(
+                'message' => __('Establecimiento no encontrado', 'event-show-base'),
+            ));
+        }
+
+        // Obtener el lugar del establecimiento (taxonomía 'lugar')
+        $lugares = wp_get_post_terms($establecimiento_id, 'lugar');
+        $lugar_id = !empty($lugares) && !is_wp_error($lugares) ? $lugares[0]->term_id : 0;
+
+        wp_send_json_success(array(
+            'id' => $establecimiento_id,
+            'title' => $establecimiento->post_title,
+            'lugar_id' => $lugar_id,
         ));
     }
 }

@@ -83,9 +83,11 @@ $user_events = new WP_Query(array(
                             // Verificar si se puede editar (7 días antes del evento)
                             $can_edit = false;
                             if ($event_date) {
-                                $event_timestamp = strtotime(str_replace('/', '-', $event_date));
-                                $days_until_event = floor(($event_timestamp - time()) / (60 * 60 * 24));
-                                $can_edit = $days_until_event >= 7;
+                                $event_timestamp = Event_Show_Helpers::date_to_timestamp($event_date);
+                                if ($event_timestamp !== false) {
+                                    $days_until_event = floor(($event_timestamp - time()) / (60 * 60 * 24));
+                                    $can_edit = $days_until_event >= 7;
+                                }
                             }
                         ?>
                             <tr>
@@ -93,9 +95,13 @@ $user_events = new WP_Query(array(
                                     <strong><a href="<?php the_permalink(); ?>" target="_blank"><?php the_title(); ?></a></strong>
                                 </td>
                                 <td>
-                                    <?php echo esc_html(Event_Show_Helpers::format_date($event_date)); ?>
-                                    <?php if ($event_time && $event_time_indef !== '1') : ?>
-                                        - <?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?>
+                                    <?php if ($event_date) : ?>
+                                        <?php echo esc_html(Event_Show_Helpers::format_date($event_date)); ?>
+                                        <?php if ($event_time && $event_time_indef !== '1') : ?>
+                                            - <?php echo esc_html(Event_Show_Helpers::format_time($event_time)); ?>
+                                        <?php endif; ?>
+                                    <?php else : ?>
+                                        <span style="color: #999;">-</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -161,31 +167,23 @@ $user_events = new WP_Query(array(
 
                     <div class="form-row">
                         <div class="form-group form-col-half">
-                            <label><?php esc_html_e('Fecha de Inicio', 'event-show-base'); ?> *</label>
-                            <input type="text" id="edit_event_date" name="event_date" class="form-control event-datepicker" required>
+                            <label><?php esc_html_e('Fecha y Hora de Inicio', 'event-show-base'); ?> *</label>
+                            <input type="datetime-local"
+                                id="edit_event_datetime_start"
+                                name="event_datetime_start"
+                                class="form-control event-datetime-picker"
+                                required>
+                            <input type="hidden" id="edit_event_date" name="event_date">
+                            <input type="hidden" id="edit_event_time" name="event_time">
                         </div>
                         <div class="form-group form-col-half">
-                            <label><?php esc_html_e('Hora de Inicio', 'event-show-base'); ?> *</label>
-                            <input type="time" id="edit_event_time" name="event_time" class="form-control" required>
-                            <label style="margin-left:10px; font-weight:normal;">
-                                <input type="checkbox" id="edit_event_time_indef" name="event_time_indef" value="1">
-                                <?php esc_html_e('Hora indefinida', 'event-show-base'); ?>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group form-col-half">
-                            <label><?php esc_html_e('Fecha de Fin', 'event-show-base'); ?></label>
-                            <input type="text" id="edit_event_end_date" name="event_end_date" class="form-control event-datepicker">
-                        </div>
-                        <div class="form-group form-col-half">
-                            <label><?php esc_html_e('Hora de Fin', 'event-show-base'); ?></label>
-                            <input type="time" id="edit_event_end_time" name="event_end_time" class="form-control">
-                            <label style="margin-left:10px; font-weight:normal;">
-                                <input type="checkbox" id="edit_event_end_time_indef" name="event_end_time_indef" value="1">
-                                <?php esc_html_e('Hora indefinida', 'event-show-base'); ?>
-                            </label>
+                            <label><?php esc_html_e('Fecha y Hora de Fin', 'event-show-base'); ?></label>
+                            <input type="datetime-local"
+                                id="edit_event_datetime_end"
+                                name="event_datetime_end"
+                                class="form-control event-datetime-picker">
+                            <input type="hidden" id="edit_event_end_date" name="event_end_date">
+                            <input type="hidden" id="edit_event_end_time" name="event_end_time">
                         </div>
                     </div>
 

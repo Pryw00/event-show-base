@@ -243,6 +243,11 @@ $current_user = wp_get_current_user();
             </label>
             <select id="event_location" name="location" class="form-control" required>
                 <option value=""><?php esc_html_e('Seleccionar lugar', 'event-show-base'); ?></option>
+                <?php if ($has_establishments && !empty($user_establecimientos)) : ?>
+                    <option value="USE_ORGANIZER_AS_LOCATION" id="use-organizer-location-option" style="display:none;">
+                        <?php esc_html_e('🏢 Usar ubicación del establecimiento organizador', 'event-show-base'); ?>
+                    </option>
+                <?php endif; ?>
                 <?php
                 $locations = get_terms(array(
                     'taxonomy' => 'lugar',

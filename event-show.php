@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Event Show
  * Description: Plugin de gestión avanzada de eventos para WordPress, desarrollado conforme a los requerimientos IEEE 830-1998 definidos en el documento SRS.
- * Version: 1.3.3
+ * Version: 1.3.9
  * Author: Pryw00
  * Text Domain: event-show-base
  * Domain Path: /languages
@@ -19,7 +19,7 @@ if (! defined('ABSPATH')) {
 }
 
 // Constantes del plugin
-define('EVENT_SHOW_VERSION', '1.3.3');
+define('EVENT_SHOW_VERSION', '1.3.9');
 define('EVENT_SHOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('EVENT_SHOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('EVENT_SHOW_PLUGIN_BASENAME', plugin_basename(__FILE__));

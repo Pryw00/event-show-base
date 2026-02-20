@@ -416,8 +416,11 @@ class Event_Show_Shortcodes
 
         // Verificar fecha límite
         $deadline = get_post_meta($event_id, '_registration_deadline', true);
-        if ($deadline && strtotime(str_replace('/', '-', $deadline)) < time()) {
-            return '<p class="event-registration-closed">' . esc_html__('El plazo de registro para este evento ha finalizado', 'event-show-base') . '</p>';
+        if ($deadline) {
+            $deadline_timestamp = Event_Show_Helpers::date_to_timestamp($deadline);
+            if ($deadline_timestamp !== false && $deadline_timestamp < time()) {
+                return '<p class="event-registration-closed">' . esc_html__('El plazo de registro para este evento ha finalizado', 'event-show-base') . '</p>';
+            }
         }
 
         // Verificar aforo

@@ -18,6 +18,60 @@ class Event_Show_Helpers
 {
 
     /**
+     * Convertir fecha DD/MM/YYYY a timestamp
+     * 
+     * @param string $date Fecha en formato dd/mm/yyyy
+     * @param string $time Hora opcional en formato HH:mm
+     * @return int|false Timestamp o false si falla
+     */
+    public static function date_to_timestamp($date, $time = '')
+    {
+        if (empty($date)) {
+            return false;
+        }
+
+        // Limpiar espacios en blanco
+        $date = trim($date);
+
+        // Dividir la fecha en partes (dd/mm/yyyy)
+        $parts = explode('/', $date);
+
+        // Validar que tenemos 3 partes
+        if (count($parts) !== 3) {
+            return false;
+        }
+
+        // Convertir a enteros y validar
+        $day = (int) trim($parts[0]);
+        $month = (int) trim($parts[1]);
+        $year = (int) trim($parts[2]);
+
+        // Validar que la fecha sea válida
+        if (!checkdate($month, $day, $year)) {
+            return false;
+        }
+
+        // Si hay hora, parsearla
+        $hour = 0;
+        $minute = 0;
+        $second = 0;
+        if (!empty($time)) {
+            $time = trim($time);
+            $time_parts = explode(':', $time);
+            if (count($time_parts) >= 2) {
+                $hour = (int) $time_parts[0];
+                $minute = (int) $time_parts[1];
+                $second = isset($time_parts[2]) ? (int) $time_parts[2] : 0;
+            }
+        }
+
+        // Crear timestamp
+        $timestamp = mktime($hour, $minute, $second, $month, $day, $year);
+
+        return $timestamp;
+    }
+
+    /**
      * Formatear fecha
      *
      * @param string $date Fecha en formato dd/mm/yyyy
@@ -34,10 +88,27 @@ class Event_Show_Helpers
             $format = get_option('event_show_date_format', 'd/m/Y');
         }
 
-        // Convertir de dd/mm/yyyy a timestamp
-        $timestamp = strtotime(str_replace('/', '-', $date));
+        // Usar nuestra función auxiliar para convertir a timestamp
+        $timestamp = self::date_to_timestamp($date);
 
-        return date_i18n($format, $timestamp);
+        if ($timestamp === false) {
+            return $date; // Devolver la fecha sin formato si falla
+        }
+
+        // Intentar primero con date_i18n
+        $result = date_i18n($format, $timestamp);
+
+        // Si date_i18n devuelve vacío, usar date() como fallback
+        if (empty($result)) {
+            $result = date($format, $timestamp);
+        }
+
+        // Si aún está vacío, devolver la fecha original
+        if (empty($result)) {
+            return $date;
+        }
+
+        return $result;
     }
 
     /**
@@ -59,7 +130,18 @@ class Event_Show_Helpers
 
         $timestamp = strtotime($time);
 
-        return date_i18n($format, $timestamp);
+        if ($timestamp === false) {
+            return $time; // Devolver la hora sin formato si falla
+        }
+
+        $result = date_i18n($format, $timestamp);
+
+        // Fallback a date() si date_i18n falla
+        if (empty($result)) {
+            $result = date($format, $timestamp);
+        }
+
+        return $result;
     }
 
     /**
@@ -96,8 +178,12 @@ class Event_Show_Helpers
             return false;
         }
 
-        $datetime_str = $event_date . ' ' . ($event_time ? $event_time : '23:59');
-        $event_timestamp = strtotime(str_replace('/', '-', $datetime_str));
+        // Usar la función auxiliar para convertir fecha y hora
+        $event_timestamp = self::date_to_timestamp($event_date, $event_time ? $event_time : '23:59');
+
+        if ($event_timestamp === false) {
+            return false;
+        }
 
         return time() > $event_timestamp;
     }
@@ -184,8 +270,11 @@ class Event_Show_Helpers
      */
     private static function date_to_ical($date, $time = '00:00')
     {
-        $datetime_str = $date . ' ' . $time;
-        $timestamp = strtotime(str_replace('/', '-', $datetime_str));
+        $timestamp = self::date_to_timestamp($date, $time);
+
+        if ($timestamp === false) {
+            return gmdate('Ymd\THis\Z'); // Fecha actual si falla
+        }
 
         return gmdate('Ymd\THis\Z', $timestamp);
     }
@@ -250,8 +339,11 @@ class Event_Show_Helpers
      */
     private static function date_to_google_cal($date, $time = '00:00')
     {
-        $datetime_str = $date . ' ' . $time;
-        $timestamp = strtotime(str_replace('/', '-', $datetime_str));
+        $timestamp = self::date_to_timestamp($date, $time);
+
+        if ($timestamp === false) {
+            return gmdate('Ymd\THis\Z'); // Fecha actual si falla
+        }
 
         return gmdate('Ymd\THis\Z', $timestamp);
     }

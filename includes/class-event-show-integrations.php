@@ -325,17 +325,11 @@ class Event_Show_Integrations
                     do_action('event_show_organizer_assigned', $post_id, $organizer_value, $tipo, $id);
 
                     // Logging
-                    Event_Show_Logger::log_activity(
+                    Event_Show_Logger::log(
                         'organizer_assigned',
-                        $current_user_id,
-                        sprintf(__('Organizador asignado al evento #%d: %s (%s)', 'event-show-base'), $post_id, $organizer_title, $tipo),
-                        array(
-                            'event_id'         => $post_id,
-                            'organizer_value'  => $organizer_value,
-                            'organizer_type'   => $tipo,
-                            'organizer_ref_id' => $id,
-                            'organizer_title'  => $organizer_title,
-                        )
+                        'evento',
+                        $post_id,
+                        sprintf(__('Organizador asignado al evento #%d: %s (%s)', 'event-show-base'), $post_id, $organizer_title, $tipo)
                     );
                 }
             } else {
@@ -584,17 +578,11 @@ class Event_Show_Integrations
                     update_post_meta($post_id, '_event_lugar_ref_id', $id);
 
                     // Logging
-                    Event_Show_Logger::log_activity(
+                    Event_Show_Logger::log(
                         'lugar_assigned',
-                        get_current_user_id(),
-                        sprintf(__('Lugar asignado al evento #%d: %s (%s)', 'event-show-base'), $post_id, $lugar_title, $tipo),
-                        array(
-                            'event_id'       => $post_id,
-                            'lugar_value'    => $lugar_value,
-                            'lugar_type'     => $tipo,
-                            'lugar_ref_id'   => $id,
-                            'lugar_title'    => $lugar_title,
-                        )
+                        'evento',
+                        $post_id,
+                        sprintf(__('Lugar asignado al evento #%d: %s (%s)', 'event-show-base'), $post_id, $lugar_title, $tipo)
                     );
                 }
             } else {

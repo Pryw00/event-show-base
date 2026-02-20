@@ -22,18 +22,20 @@
                 $event_date = get_post_meta($event_id, '_event_date', true);
 
                 if ($event_date) {
-                    $timestamp = strtotime(str_replace('/', '-', $event_date));
-                    $month_key = date('Y-m', $timestamp);
-                    $month_name = date_i18n('F Y', $timestamp);
+                    $timestamp = Event_Show_Helpers::date_to_timestamp($event_date);
+                    if ($timestamp !== false) {
+                        $month_key = date('Y-m', $timestamp);
+                        $month_name = date_i18n('F Y', $timestamp);
 
-                    if (! isset($events_by_month[$month_key])) {
-                        $events_by_month[$month_key] = array(
-                            'name' => $month_name,
-                            'events' => array(),
-                        );
+                        if (! isset($events_by_month[$month_key])) {
+                            $events_by_month[$month_key] = array(
+                                'name' => $month_name,
+                                'events' => array(),
+                            );
+                        }
+
+                        $events_by_month[$month_key]['events'][] = $event_id;
                     }
-
-                    $events_by_month[$month_key]['events'][] = $event_id;
                 }
             endwhile;
 
@@ -51,8 +53,9 @@
                             $event_time_indef = get_post_meta($event_id, '_event_time_indef', true);
                             $lugar = Event_Show_Helpers::get_event_location($event_id);
 
-                            $day = date_i18n('d', strtotime(str_replace('/', '-', $event_date)));
-                            $day_name = date_i18n('D', strtotime(str_replace('/', '-', $event_date)));
+                            $timestamp = Event_Show_Helpers::date_to_timestamp($event_date);
+                            $day = $timestamp !== false ? date_i18n('d', $timestamp) : '';
+                            $day_name = $timestamp !== false ? date_i18n('D', $timestamp) : '';
                         ?>
                             <div class="calendar-event-item">
                                 <div class="calendar-event-date">

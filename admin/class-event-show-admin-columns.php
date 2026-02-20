@@ -124,8 +124,13 @@ class Event_Show_Admin_Columns
 
                 if ('0' === $enable_registration) {
                     echo '<span class="event-status-badge" style="background: #999; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px;">' . esc_html__('Registro Deshabilitado', 'event-show-base') . '</span>';
-                } elseif ($deadline && strtotime(str_replace('/', '-', $deadline)) < time()) {
-                    echo '<span class="event-status-badge" style="background: #dc3232; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px;">' . esc_html__('Registro Cerrado', 'event-show-base') . '</span>';
+                } elseif ($deadline) {
+                    $deadline_timestamp = Event_Show_Helpers::date_to_timestamp($deadline);
+                    if ($deadline_timestamp !== false && $deadline_timestamp < time()) {
+                        echo '<span class="event-status-badge" style="background: #dc3232; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px;">' . esc_html__('Registro Cerrado', 'event-show-base') . '</span>';
+                    } else {
+                        echo '<span class="event-status-badge" style="background: #46b450; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px;">' . esc_html__('Abierto', 'event-show-base') . '</span>';
+                    }
                 } else {
                     echo '<span class="event-status-badge" style="background: #46b450; color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px;">' . esc_html__('Abierto', 'event-show-base') . '</span>';
                 }

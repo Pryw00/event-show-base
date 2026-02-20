@@ -350,8 +350,15 @@ class Event_Show_Metaboxes
         );
 
         // Guardar fecha y hora
-        if (isset($_POST['event_date'])) {
+        if (isset($_POST['event_date']) && !empty($_POST['event_date'])) {
             update_post_meta($post_id, '_event_date', sanitize_text_field($_POST['event_date']));
+        } else {
+            // Si no hay fecha en el POST pero el metabox está siendo guardado, mantener el valor existente
+            // Esto previene que se borre accidentalmente la fecha
+            if (!metadata_exists('post', $post_id, '_event_date')) {
+                // Solo para nuevos posts, establecer un mensaje de error
+                set_transient('event_show_date_required_' . $post_id, __('La fecha del evento es obligatoria', 'event-show-base'), 30);
+            }
         }
         // Hora de inicio indefinida
         $event_time_indef = isset($_POST['event_time_indef']) ? '1' : '0';
@@ -413,10 +420,10 @@ class Event_Show_Metaboxes
         // Validar que el evento sea al menos 5 días en el futuro
         if (! empty($_POST['event_date'])) {
             $min_days = get_option('event_show_min_days_advance', 5);
-            $event_timestamp = strtotime(str_replace('/', '-', $_POST['event_date']));
+            $event_timestamp = Event_Show_Helpers::date_to_timestamp($_POST['event_date']);
             $min_timestamp = strtotime("+{$min_days} days");
 
-            if ($event_timestamp < $min_timestamp && 'publish' === $post->post_status) {
+            if ($event_timestamp !== false && $event_timestamp < $min_timestamp && 'publish' === $post->post_status) {
                 // Si el usuario no es admin, cambiar a borrador
                 if (! current_user_can('manage_options')) {
                     wp_update_post(array(

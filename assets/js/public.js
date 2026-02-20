@@ -105,9 +105,6 @@
     // Modales
     initModals();
 
-    // Manejar checkboxes de hora indefinida
-    initTimeIndefiniteCheckboxes();
-
     // Paginación para Grid y List
     initEventPagination();
 
@@ -129,10 +126,51 @@
           if (response.success) {
             $("#edit_event_id").val(eventId);
             $("#edit_event_description").val(response.data.description);
-            $("#edit_event_date").val(response.data.event_date);
-            $("#edit_event_time").val(response.data.event_time);
-            $("#edit_event_end_date").val(response.data.event_end_date || "");
-            $("#edit_event_end_time").val(response.data.event_end_time || "");
+
+            // Convertir fecha y hora a formato datetime-local (YYYY-MM-DDTHH:MM)
+            if (response.data.event_date) {
+              var dateParts = response.data.event_date.split("/"); // DD/MM/YYYY
+              var timeParts = response.data.event_time
+                ? response.data.event_time.split(":")
+                : ["00", "00"];
+
+              if (dateParts.length === 3) {
+                var datetimeStr =
+                  dateParts[2] +
+                  "-" +
+                  dateParts[1].padStart(2, "0") +
+                  "-" +
+                  dateParts[0].padStart(2, "0") +
+                  "T" +
+                  timeParts[0].padStart(2, "0") +
+                  ":" +
+                  timeParts[1].padStart(2, "0");
+                $("#edit_event_datetime_start").val(datetimeStr);
+              }
+            }
+
+            // Convertir fecha y hora de fin a formato datetime-local
+            if (response.data.event_end_date) {
+              var endDateParts = response.data.event_end_date.split("/"); // DD/MM/YYYY
+              var endTimeParts = response.data.event_end_time
+                ? response.data.event_end_time.split(":")
+                : ["00", "00"];
+
+              if (endDateParts.length === 3) {
+                var endDatetimeStr =
+                  endDateParts[2] +
+                  "-" +
+                  endDateParts[1].padStart(2, "0") +
+                  "-" +
+                  endDateParts[0].padStart(2, "0") +
+                  "T" +
+                  endTimeParts[0].padStart(2, "0") +
+                  ":" +
+                  endTimeParts[1].padStart(2, "0");
+                $("#edit_event_datetime_end").val(endDatetimeStr);
+              }
+            }
+
             $("#edit_event_category").val(response.data.category || "");
             $("#edit_event_age").val(response.data.age_classification || "");
             $("#edit_event_location").val(response.data.location || "");
@@ -226,8 +264,44 @@
 
       // Convertir datetime-local a formatos separados
       var datetimeStart = $("#event_datetime_start").val();
+
+      console.log("Datetime Start value:", datetimeStart); // Debug
+
+      if (!datetimeStart) {
+        $messages
+          .removeClass("success")
+          .addClass("error")
+          .html(
+            "⚠️ Por favor, selecciona la fecha y hora de inicio del evento.",
+          )
+          .show();
+        $("html, body").animate(
+          { scrollTop: $messages.offset().top - 100 },
+          500,
+        );
+        return false;
+      }
+
       if (datetimeStart) {
         var dtStart = new Date(datetimeStart);
+
+        // Verificar que la fecha sea válida
+        if (isNaN(dtStart.getTime())) {
+          console.error("Invalid date:", datetimeStart);
+          $messages
+            .removeClass("success")
+            .addClass("error")
+            .html(
+              "⚠️ La fecha de inicio no es válida. Por favor, selecciona una fecha correcta.",
+            )
+            .show();
+          $("html, body").animate(
+            { scrollTop: $messages.offset().top - 100 },
+            500,
+          );
+          return false;
+        }
+
         var dateStr =
           String(dtStart.getDate()).padStart(2, "0") +
           "/" +
@@ -238,25 +312,34 @@
           String(dtStart.getHours()).padStart(2, "0") +
           ":" +
           String(dtStart.getMinutes()).padStart(2, "0");
+
         $("#event_date_submit").val(dateStr);
         $("#event_time_submit").val(timeStr);
+
+        console.log("Date converted:", dateStr, "Time:", timeStr); // Debug
       }
 
       var datetimeEnd = $("#event_datetime_end").val();
       if (datetimeEnd) {
         var dtEnd = new Date(datetimeEnd);
-        var dateEndStr =
-          String(dtEnd.getDate()).padStart(2, "0") +
-          "/" +
-          String(dtEnd.getMonth() + 1).padStart(2, "0") +
-          "/" +
-          dtEnd.getFullYear();
-        var timeEndStr =
-          String(dtEnd.getHours()).padStart(2, "0") +
-          ":" +
-          String(dtEnd.getMinutes()).padStart(2, "0");
-        $("#event_date_end").val(dateEndStr);
-        $("#event_time_end").val(timeEndStr);
+
+        // Verificar que la fecha sea válida
+        if (!isNaN(dtEnd.getTime())) {
+          var dateEndStr =
+            String(dtEnd.getDate()).padStart(2, "0") +
+            "/" +
+            String(dtEnd.getMonth() + 1).padStart(2, "0") +
+            "/" +
+            dtEnd.getFullYear();
+          var timeEndStr =
+            String(dtEnd.getHours()).padStart(2, "0") +
+            ":" +
+            String(dtEnd.getMinutes()).padStart(2, "0");
+          $("#event_date_end").val(dateEndStr);
+          $("#event_time_end").val(timeEndStr);
+
+          console.log("End date converted:", dateEndStr, "Time:", timeEndStr); // Debug
+        }
       }
 
       // Validar fecha de evento
@@ -303,13 +386,70 @@
         }
       }
 
+      // Validación final antes de enviar
+      var finalEventDate = $("#event_date_submit").val();
+      var finalEventTime = $("#event_time_submit").val();
+
+      console.log(
+        "Final values before submit - Date:",
+        finalEventDate,
+        "Time:",
+        finalEventTime,
+      ); // Debug
+
+      if (!finalEventDate || !finalEventTime) {
+        $messages
+          .removeClass("success")
+          .addClass("error")
+          .html(
+            "⚠️ Error al procesar la fecha del evento. Por favor, intenta nuevamente.",
+          )
+          .show();
+        $("html, body").animate(
+          { scrollTop: $messages.offset().top - 100 },
+          500,
+        );
+        return false;
+      }
+
       $btn.prop("disabled", true);
       $btn.find(".btn-text").hide();
       $btn.find(".btn-loading").show();
 
-      var formData = new FormData($form[0]);
+      var formData = new FormData();
 
-      // Adjuntar archivos manualmente si es necesario
+      // Agregar todos los campos del formulario explícitamente
+      formData.append("action", "event_show_submit_event");
+      formData.append("nonce", $form.find('[name="nonce"]').val());
+      formData.append("title", $("#event_title").val() || "");
+      formData.append("description", $("#event_description").val() || "");
+      // Leer valores de fecha/hora inicio
+      formData.append("event_date", finalEventDate);
+      formData.append("event_time", finalEventTime);
+      formData.append("event_date_end", $("#event_date_end").val() || "");
+      formData.append("event_time_end", $("#event_time_end").val() || "");
+
+      formData.append("category", $("#event_category").val() || "");
+      formData.append("age_rating", $("#event_age_rating").val() || "");
+
+      // Agregar organizador (verificar ambos posibles campos)
+      var organizer_id = $("#event_organizer_id").val() || "";
+      var organizer = $("#event_organizer").val() || "";
+      formData.append("organizer_id", organizer_id);
+      formData.append("organizer", organizer);
+
+      // Agregar lugar - manejar el caso especial de usar el establecimiento como lugar
+      var eventLocationValue = $("#event_location").val() || "";
+      if (eventLocationValue === "USE_ORGANIZER_AS_LOCATION" && organizer_id) {
+        // Enviar el establecimiento como lugar
+        formData.append("location", "");
+        formData.append("location_establecimiento_id", organizer_id);
+      } else {
+        formData.append("location", eventLocationValue);
+        formData.append("location_establecimiento_id", "");
+      }
+
+      // Adjuntar archivos
       var banner = $("#event_banner")[0].files[0];
       var thumb = $("#event_thumbnail")[0].files[0];
       if (banner) formData.append("event_banner", banner);
@@ -336,13 +476,13 @@
             if ($modal.length) {
               setTimeout(function () {
                 $modal.fadeOut(300, function () {
-                  location.reload();
+                  window.location.reload();
                 });
               }, 1500);
             } else {
               // Si no hay modal, recargar después del mensaje
               setTimeout(function () {
-                location.reload();
+                window.location.reload();
               }, 2000);
             }
           } else {
@@ -492,8 +632,50 @@
    * Inicializar formulario de envío de eventos
    */
   function initSubmitEventForm() {
-    // Esta función se implementa en initRegistrationForm más arriba
-    // que maneja correctamente FormData para archivos
+    // Cuando se selecciona un establecimiento organizador, cargar su lugar
+    $("#event_organizer_id").on("change", function () {
+      var establecimientoId = $(this).val();
+
+      if (establecimientoId) {
+        // Mostrar la opción de usar el establecimiento como lugar
+        $("#use-organizer-location-option").show();
+
+        // Consultar datos del establecimiento
+        $.ajax({
+          url: eventShowData.ajaxUrl,
+          type: "POST",
+          data: {
+            action: "event_show_get_establecimiento_data",
+            establecimiento_id: establecimientoId,
+            nonce: eventShowData.nonce,
+          },
+          success: function (response) {
+            if (response.success) {
+              console.log(
+                "Establecimiento cargado - ID:",
+                establecimientoId,
+                "Lugar ID:",
+                response.data.lugar_id,
+              );
+
+              // Si el establecimiento tiene un lugar, pre-seleccionarlo
+              if (response.data.lugar_id) {
+                $("#event_location").val(response.data.lugar_id);
+              }
+            }
+          },
+          error: function () {
+            console.error("Error al cargar datos del establecimiento");
+          },
+        });
+      } else {
+        // Ocultar la opción si no hay establecimiento seleccionado
+        $("#use-organizer-location-option").hide();
+        if ($("#event_location").val() === "USE_ORGANIZER_AS_LOCATION") {
+          $("#event_location").val("");
+        }
+      }
+    });
   }
 
   /**
@@ -758,7 +940,7 @@
             $("#create-location-form")[0].reset();
             $("#create_loc_image_preview").hide();
             alert(response.data.message);
-            location.reload();
+            window.location.reload();
           } else {
             alert(response.data.message);
           }
@@ -785,7 +967,7 @@
           if (response.success) {
             alert(response.data.message);
             $("#edit-organizer-modal").fadeOut();
-            location.reload();
+            window.location.reload();
           } else {
             alert(response.data.message);
           }
@@ -802,6 +984,79 @@
       var $form = $(this);
       var $btn = $form.find("button[type='submit']");
       var $messages = $form.find(".form-messages");
+
+      // Convertir datetime-local a formatos separados
+      var datetimeStart = $("#edit_event_datetime_start").val();
+
+      if (!datetimeStart) {
+        $messages
+          .removeClass("success")
+          .addClass("error")
+          .html(
+            "⚠️ Por favor, selecciona la fecha y hora de inicio del evento.",
+          )
+          .show();
+        $("html, body").animate(
+          { scrollTop: $messages.offset().top - 100 },
+          500,
+        );
+        return false;
+      }
+
+      if (datetimeStart) {
+        var dtStart = new Date(datetimeStart);
+
+        // Verificar que la fecha sea válida
+        if (isNaN(dtStart.getTime())) {
+          $messages
+            .removeClass("success")
+            .addClass("error")
+            .html(
+              "⚠️ La fecha de inicio no es válida. Por favor, selecciona una fecha correcta.",
+            )
+            .show();
+          $("html, body").animate(
+            { scrollTop: $messages.offset().top - 100 },
+            500,
+          );
+          return false;
+        }
+
+        var dateStr =
+          String(dtStart.getDate()).padStart(2, "0") +
+          "/" +
+          String(dtStart.getMonth() + 1).padStart(2, "0") +
+          "/" +
+          dtStart.getFullYear();
+        var timeStr =
+          String(dtStart.getHours()).padStart(2, "0") +
+          ":" +
+          String(dtStart.getMinutes()).padStart(2, "0");
+
+        $("#edit_event_date").val(dateStr);
+        $("#edit_event_time").val(timeStr);
+      }
+
+      var datetimeEnd = $("#edit_event_datetime_end").val();
+      if (datetimeEnd) {
+        var dtEnd = new Date(datetimeEnd);
+
+        // Verificar que la fecha sea válida
+        if (!isNaN(dtEnd.getTime())) {
+          var dateEndStr =
+            String(dtEnd.getDate()).padStart(2, "0") +
+            "/" +
+            String(dtEnd.getMonth() + 1).padStart(2, "0") +
+            "/" +
+            dtEnd.getFullYear();
+          var timeEndStr =
+            String(dtEnd.getHours()).padStart(2, "0") +
+            ":" +
+            String(dtEnd.getMinutes()).padStart(2, "0");
+          $("#edit_event_end_date").val(dateEndStr);
+          $("#edit_event_end_time").val(timeEndStr);
+        }
+      }
 
       // Validar fecha de evento
       var eventDate = $("#edit_event_date").val();
@@ -875,7 +1130,7 @@
               .show();
             setTimeout(function () {
               $("#edit-event-modal").fadeOut();
-              location.reload();
+              window.location.reload();
             }, 1500);
           } else {
             $messages
@@ -1349,44 +1604,6 @@
           $btn.find(".btn-loading").hide();
         }
       },
-    });
-  }
-
-  /**
-   * Inicializar manejo de checkboxes de hora indefinida
-   */
-  function initTimeIndefiniteCheckboxes() {
-    // Manejar checkbox de hora indefinida en formulario de edición
-    $(document).on("change", "#edit_event_time_indef", function () {
-      var $timeInput = $("#edit_event_time");
-      if ($(this).is(":checked")) {
-        $timeInput.prop("required", false).prop("disabled", true).val("");
-      } else {
-        $timeInput.prop("required", true).prop("disabled", false);
-      }
-    });
-
-    $(document).on("change", "#edit_event_end_time_indef", function () {
-      var $timeInput = $("#edit_event_end_time");
-      if ($(this).is(":checked")) {
-        $timeInput.prop("disabled", true).val("");
-      } else {
-        $timeInput.prop("disabled", false);
-      }
-    });
-
-    // Reinicializar datepicker cuando se abre el modal de edición
-    $(document).on("click", ".edit-event-link", function () {
-      setTimeout(function () {
-        initDatepicker();
-      }, 100);
-    });
-
-    // Reinicializar datepicker cuando se abre el modal de crear evento
-    $(document).on("click", "#open-create-event-modal", function () {
-      setTimeout(function () {
-        initDatepicker();
-      }, 100);
     });
   }
 })(jQuery);

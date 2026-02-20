@@ -114,8 +114,18 @@ class Event_Show_Public
         }
 
         // Construir fecha/hora ISO 8601
-        $start_datetime = date('c', strtotime(str_replace('/', '-', $event_date) . ' ' . ($event_time ? $event_time : '00:00')));
-        $end_datetime = date('c', strtotime(str_replace('/', '-', ($event_end_date ? $event_end_date : $event_date)) . ' ' . ($event_end_time ? $event_end_time : $event_time)));
+        $start_timestamp = Event_Show_Helpers::date_to_timestamp($event_date, $event_time ? $event_time : '00:00');
+        $end_timestamp = Event_Show_Helpers::date_to_timestamp(
+            $event_end_date ? $event_end_date : $event_date,
+            $event_end_time ? $event_end_time : ($event_time ? $event_time : '00:00')
+        );
+
+        if ($start_timestamp === false || $end_timestamp === false) {
+            return;
+        }
+
+        $start_datetime = date('c', $start_timestamp);
+        $end_datetime = date('c', $end_timestamp);
 
         // Obtener lugar
         $lugar = Event_Show_Helpers::get_event_location($event_id);

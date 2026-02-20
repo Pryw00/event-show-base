@@ -95,8 +95,8 @@ class Event_Show_Attendees
         // Verificar fecha límite de registro
         $registration_deadline = get_post_meta($event_id, '_registration_deadline', true);
         if ($registration_deadline) {
-            $deadline_timestamp = strtotime(str_replace('/', '-', $registration_deadline));
-            if (time() > $deadline_timestamp) {
+            $deadline_timestamp = Event_Show_Helpers::date_to_timestamp($registration_deadline);
+            if ($deadline_timestamp !== false && time() > $deadline_timestamp) {
                 return false;
             }
         }
