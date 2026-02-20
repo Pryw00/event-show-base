@@ -214,7 +214,9 @@ class Event_Show_Ajax
         $organizer_id = isset($_POST['organizer_id']) ? absint($_POST['organizer_id']) : 0;
         $organizer_term = isset($_POST['organizer']) ? absint($_POST['organizer']) : 0;
 
-        $location = isset($_POST['location']) ? absint($_POST['location']) : 0;
+        // Lugar puede ser: ID numérico de taxonomía, "USE_ORGANIZER_AS_LOCATION", o vacío
+        $location_raw = isset($_POST['location']) ? sanitize_text_field($_POST['location']) : '';
+        $location = ($location_raw === 'USE_ORGANIZER_AS_LOCATION') ? 'USE_ORGANIZER_AS_LOCATION' : absint($location_raw);
         $location_establecimiento_id = isset($_POST['location_establecimiento_id']) ? absint($_POST['location_establecimiento_id']) : 0;
 
         // Procesar imágenes obligatorias
@@ -376,7 +378,12 @@ class Event_Show_Ajax
             }
         }
 
-        if ($location) {
+        if ($location === 'USE_ORGANIZER_AS_LOCATION') {
+            // El usuario seleccionó usar el lugar del establecimiento organizador
+            update_post_meta($event_id, '_event_lugar_id', 'USE_ORGANIZER_AS_LOCATION');
+            update_post_meta($event_id, '_event_lugar_type', 'USE_ORGANIZER_AS_LOCATION');
+            update_post_meta($event_id, '_event_lugar_ref_id', $organizer_id); // Guardar referencia al organizador
+        } elseif ($location) {
             // El lugar viene como term_id de la taxonomía 'lugar'
             // Guardarlo en el formato que espera el sistema de integrations
             $lugar_term = get_term($location, 'lugar');
@@ -608,6 +615,45 @@ class Event_Show_Ajax
             }
         }
 
+        // Obtener organizador (puede ser establecimiento o taxonomía)
+        $organizer_type = get_post_meta($event_id, '_event_organizer_type', true);
+        $organizer_ref_id = get_post_meta($event_id, '_event_organizer_ref_id', true);
+
+        $organizer_id = null;
+        $organizer_taxonomy = null;
+
+        if ($organizer_type === 'establecimiento' && $organizer_ref_id) {
+            $organizer_id = $organizer_ref_id;
+        } elseif ($organizer_type === 'taxonomy' && $organizer_ref_id) {
+            $organizer_taxonomy = $organizer_ref_id;
+        }
+
+        // Obtener lugar - puede ser establecimiento, taxonomía o USE_ORGANIZER_AS_LOCATION
+        $lugar_type = get_post_meta($event_id, '_event_lugar_type', true);
+        $lugar_ref_id = get_post_meta($event_id, '_event_lugar_ref_id', true);
+
+        $location = null;
+
+        if ($lugar_type === 'USE_ORGANIZER_AS_LOCATION') {
+            $location = 'USE_ORGANIZER_AS_LOCATION';
+        } elseif ($lugar_type === 'establecimiento' && $lugar_ref_id) {
+            // Si el lugar es un establecimiento, necesitamos obtener su lugar asociado
+            $location = $lugar_ref_id; // Por ahora retornamos el ID del establecimiento
+        } elseif ($lugar_type === 'taxonomy' && $lugar_ref_id) {
+            $location = $lugar_ref_id;
+        } else {
+            // Fallback: intentar buscar en taxonomía lugar directamente
+            $location = $this->get_first_term_id($event_id, 'lugar');
+        }
+
+        // Obtener banner - es el ID del attachment
+        $banner_id = get_post_meta($event_id, '_event_banner', true);
+        $banner_url = $banner_id ? wp_get_attachment_image_url($banner_id, 'large') : false;
+
+        // Obtener thumbnail/grid image
+        $thumbnail_id = get_post_meta($event_id, '_event_thumbnail', true);
+        $grid_image_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'medium') : false;
+
         wp_send_json_success(array(
             'title' => $event->post_title,
             'description' => $event->post_content,
@@ -618,9 +664,11 @@ class Event_Show_Ajax
             'max_attendees' => get_post_meta($event_id, '_max_attendees', true),
             'category' => $this->get_first_term_id($event_id, 'categoria_evento'),
             'age_classification' => $this->get_first_term_id($event_id, 'clasificacion_edad'),
-            'location' => $this->get_first_term_id($event_id, 'lugar'),
-            'banner_url' => get_the_post_thumbnail_url($event_id, 'large'),
-            'grid_image_url' => $this->get_grid_image_url($event_id),
+            'location' => $location,
+            'organizer_id' => $organizer_id, // Establecimiento
+            'organizer_taxonomy' => $organizer_taxonomy, // Taxonomía organizador
+            'banner_url' => $banner_url,
+            'grid_image_url' => $grid_image_url,
         ));
     }
 
@@ -662,7 +710,14 @@ class Event_Show_Ajax
         $max_attendees = isset($_POST['max_attendees']) ? intval($_POST['max_attendees']) : '';
         $category = isset($_POST['category']) ? intval($_POST['category']) : 0;
         $age_classification = isset($_POST['age_classification']) ? intval($_POST['age_classification']) : 0;
-        $location = isset($_POST['location']) ? intval($_POST['location']) : 0;
+
+        // Manejar ambos tipos de organizador: establecimiento (organizer_id) o taxonomía (organizer)
+        $organizer_id = isset($_POST['organizer_id']) ? absint($_POST['organizer_id']) : 0;
+        $organizer_term = isset($_POST['organizer']) ? absint($_POST['organizer']) : 0;
+
+        // Lugar puede ser: ID numérico de taxonomía, "USE_ORGANIZER_AS_LOCATION", o vacío
+        $location_raw = isset($_POST['location']) ? sanitize_text_field($_POST['location']) : '';
+        $location = ($location_raw === 'USE_ORGANIZER_AS_LOCATION') ? 'USE_ORGANIZER_AS_LOCATION' : absint($location_raw);
 
         if (!$event_id || !$description || !$event_date || !$event_time) {
             wp_send_json_error(array('message' => __('Faltan datos obligatorios', 'event-show-base')));
@@ -714,7 +769,31 @@ class Event_Show_Ajax
         if ($age_classification) {
             wp_set_post_terms($event_id, array($age_classification), 'clasificacion_edad');
         }
-        if ($location) {
+
+        // Actualizar organizador
+        if ($organizer_id) {
+            $organizer_value = 'establecimiento_' . $organizer_id;
+            update_post_meta($event_id, '_event_organizer_id', $organizer_value);
+            update_post_meta($event_id, '_event_organizer_type', 'establecimiento');
+            update_post_meta($event_id, '_event_organizer_ref_id', $organizer_id);
+        } elseif ($organizer_term) {
+            $organizer_value = 'taxonomy_' . $organizer_term;
+            update_post_meta($event_id, '_event_organizer_id', $organizer_value);
+            update_post_meta($event_id, '_event_organizer_type', 'taxonomy');
+            update_post_meta($event_id, '_event_organizer_ref_id', $organizer_term);
+            wp_set_post_terms($event_id, array($organizer_term), 'organizador');
+        }
+
+        // Actualizar lugar
+        if ($location === 'USE_ORGANIZER_AS_LOCATION') {
+            update_post_meta($event_id, '_event_lugar_id', 'USE_ORGANIZER_AS_LOCATION');
+            update_post_meta($event_id, '_event_lugar_type', 'USE_ORGANIZER_AS_LOCATION');
+            update_post_meta($event_id, '_event_lugar_ref_id', $organizer_id);
+        } elseif ($location) {
+            $lugar_value = 'taxonomy_' . $location;
+            update_post_meta($event_id, '_event_lugar_id', $lugar_value);
+            update_post_meta($event_id, '_event_lugar_type', 'taxonomy');
+            update_post_meta($event_id, '_event_lugar_ref_id', $location);
             wp_set_post_terms($event_id, array($location), 'lugar');
         }
 
@@ -726,6 +805,7 @@ class Event_Show_Ajax
 
             $attachment_id = media_handle_upload('banner', $event_id);
             if (!is_wp_error($attachment_id)) {
+                update_post_meta($event_id, '_event_banner', $attachment_id);
                 set_post_thumbnail($event_id, $attachment_id);
             }
         }

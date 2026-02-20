@@ -213,10 +213,82 @@ $user_events = new WP_Query(array(
                         </select>
                     </div>
 
+                    <?php
+                    // Verificar si la integración con establecimientos está disponible
+                    $edit_has_establishments = class_exists('Event_Show_Integrations') &&
+                        Event_Show_Integrations::has_establishments_integration();
+
+                    if ($edit_has_establishments) :
+                        // MODO: Establecimientos como organizadores
+                        $edit_current_user_id = get_current_user_id();
+                        $edit_query_args = array(
+                            'post_type'      => 'establecimiento',
+                            'posts_per_page' => -1,
+                            'post_status'    => 'publish',
+                            'orderby'        => 'title',
+                            'order'          => 'ASC',
+                        );
+
+                        if (!current_user_can('manage_options')) {
+                            $edit_query_args['author'] = $edit_current_user_id;
+                        }
+
+                        $edit_user_establecimientos = get_posts($edit_query_args);
+                    ?>
+                        <div class="form-group">
+                            <label><?php esc_html_e('Establecimiento Organizador', 'event-show-base'); ?></label>
+                            <select id="edit_event_organizer_id" name="organizer_id" class="form-control">
+                                <option value=""><?php esc_html_e('-- Seleccionar establecimiento --', 'event-show-base'); ?></option>
+                                <?php foreach ($edit_user_establecimientos as $edit_establecimiento) : ?>
+                                    <option value="<?php echo esc_attr($edit_establecimiento->ID); ?>">
+                                        <?php echo esc_html($edit_establecimiento->post_title); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php else :
+                        // MODO: Taxonomía organizador (fallback)
+                        $edit_current_user_id = get_current_user_id();
+                        $edit_organizers = get_terms(array(
+                            'taxonomy' => 'organizador',
+                            'hide_empty' => false,
+                            'meta_query' => array(
+                                'relation' => 'AND',
+                                array(
+                                    'key' => 'owner_id',
+                                    'value' => $edit_current_user_id,
+                                    'compare' => '='
+                                ),
+                                array(
+                                    'key' => 'status',
+                                    'value' => 'approved',
+                                    'compare' => '='
+                                )
+                            ),
+                        ));
+                    ?>
+                        <div class="form-group">
+                            <label><?php esc_html_e('Organizador', 'event-show-base'); ?></label>
+                            <select id="edit_event_organizer" name="organizer" class="form-control">
+                                <option value=""><?php esc_html_e('-- Seleccionar organizador --', 'event-show-base'); ?></option>
+                                <?php foreach ($edit_organizers as $edit_org) : ?>
+                                    <option value="<?php echo esc_attr($edit_org->term_id); ?>">
+                                        <?php echo esc_html($edit_org->name); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="form-group">
                         <label><?php esc_html_e('Lugar', 'event-show-base'); ?></label>
                         <select id="edit_event_location" name="location" class="form-control">
                             <option value=""><?php esc_html_e('-- Seleccionar --', 'event-show-base'); ?></option>
+                            <?php if ($edit_has_establishments && !empty($edit_user_establecimientos)) : ?>
+                                <option value="USE_ORGANIZER_AS_LOCATION" id="edit-use-organizer-location-option" style="display:none;">
+                                    <?php esc_html_e('🏢 Usar ubicación del establecimiento organizador', 'event-show-base'); ?>
+                                </option>
+                            <?php endif; ?>
                             <?php
                             $locations = get_terms(array('taxonomy' => 'lugar', 'hide_empty' => false));
                             foreach ($locations as $loc) {

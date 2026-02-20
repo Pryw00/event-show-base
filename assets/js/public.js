@@ -173,26 +173,113 @@
 
             $("#edit_event_category").val(response.data.category || "");
             $("#edit_event_age").val(response.data.age_classification || "");
-            $("#edit_event_location").val(response.data.location || "");
+
+            // Guardar el lugar original del evento antes de cargar el organizador
+            var originalLocation = response.data.location || "";
+
+            // Cargar organizador (puede ser establecimiento o taxonomía)
+            if (response.data.organizer_id) {
+              var orgId = response.data.organizer_id.toString();
+
+              // Verificar que el select existe
+              var $orgSelect = $("#edit_event_organizer_id");
+
+              if ($orgSelect.length > 0) {
+                $orgSelect.val(orgId);
+
+                // Mostrar la opción de usar el establecimiento como lugar
+                $("#edit-use-organizer-location-option").css(
+                  "display",
+                  "block",
+                );
+              }
+
+              // Si el lugar del evento es USE_ORGANIZER_AS_LOCATION, mantenerlo
+              // Si no, verificar si el lugar del evento coincide con el del establecimiento
+              setTimeout(function () {
+                if (originalLocation === "USE_ORGANIZER_AS_LOCATION") {
+                  $("#edit_event_location").val("USE_ORGANIZER_AS_LOCATION");
+                } else if (originalLocation) {
+                  // Verificar si el lugar del evento coincide con el del establecimiento
+                  $.ajax({
+                    url: eventShowData.ajaxUrl,
+                    type: "POST",
+                    data: {
+                      action: "event_show_get_establecimiento_data",
+                      post_id: orgId,
+                      nonce: eventShowData.nonce,
+                    },
+                    success: function (estabResponse) {
+                      if (
+                        estabResponse.success &&
+                        estabResponse.data &&
+                        estabResponse.data.lugar_id
+                      ) {
+                        var estabLugarId =
+                          estabResponse.data.lugar_id.toString();
+                        var eventLugarId = originalLocation.toString();
+
+                        if (estabLugarId === eventLugarId) {
+                          // Si coinciden, usar la opción especial
+                          $("#edit_event_location").val(
+                            "USE_ORGANIZER_AS_LOCATION",
+                          );
+                        } else {
+                          // Si no coinciden, establecer el lugar específico
+                          $("#edit_event_location").val(eventLugarId);
+                        }
+                      } else {
+                        // Si falla la llamada, usar el lugar original
+                        $("#edit_event_location").val(
+                          originalLocation.toString(),
+                        );
+                      }
+                    },
+                    error: function () {
+                      // En caso de error, usar el lugar original
+                      $("#edit_event_location").val(
+                        originalLocation.toString(),
+                      );
+                    },
+                  });
+                }
+              }, 200);
+            } else if (response.data.organizer_taxonomy) {
+              $("#edit_event_organizer").val(
+                response.data.organizer_taxonomy.toString(),
+              );
+              // Para taxonomía organizador, simplemente cargar el lugar
+              setTimeout(function () {
+                $("#edit_event_location").val(originalLocation.toString());
+              }, 200);
+            } else {
+              // Sin organizador, cargar el lugar directamente
+              setTimeout(function () {
+                $("#edit_event_location").val(originalLocation.toString());
+              }, 200);
+            }
+
             $("#edit_event_capacity").val(response.data.max_attendees || "");
 
             // Mostrar previsualizaciones de imágenes existentes
             if (response.data.banner_url) {
-              $("#edit_banner_preview").html(
+              var bannerHtml =
+                '<p style="margin-bottom:5px; font-size:12px; color:#666;">Imagen actual:</p>' +
                 '<img src="' +
-                  response.data.banner_url +
-                  '" style="max-width:100%; height:auto; border-radius:8px;">',
-              );
+                response.data.banner_url +
+                '" style="max-width:200px; height:auto; border-radius:8px; border:2px solid #ddd;">';
+              $("#edit_banner_preview").html(bannerHtml);
             } else {
               $("#edit_banner_preview").html("");
             }
 
             if (response.data.grid_image_url) {
-              $("#edit_grid_image_preview").html(
+              var gridHtml =
+                '<p style="margin-bottom:5px; font-size:12px; color:#666;">Imagen actual:</p>' +
                 '<img src="' +
-                  response.data.grid_image_url +
-                  '" style="max-width:100%; height:auto; border-radius:8px;">',
-              );
+                response.data.grid_image_url +
+                '" style="max-width:200px; height:auto; border-radius:8px; border:2px solid #ddd;">';
+              $("#edit_grid_image_preview").html(gridHtml);
             } else {
               $("#edit_grid_image_preview").html("");
             }
@@ -673,6 +760,44 @@
         $("#use-organizer-location-option").hide();
         if ($("#event_location").val() === "USE_ORGANIZER_AS_LOCATION") {
           $("#event_location").val("");
+        }
+      }
+    });
+
+    // Manejador para formulario de EDICIÓN
+    $("#edit_event_organizer_id").on("change", function () {
+      var establecimientoId = $(this).val();
+
+      if (establecimientoId) {
+        // Mostrar la opción de usar el establecimiento como lugar
+        $("#edit-use-organizer-location-option").show();
+
+        // Consultar datos del establecimiento
+        $.ajax({
+          url: eventShowData.ajaxUrl,
+          type: "POST",
+          data: {
+            action: "event_show_get_establecimiento_data",
+            establecimiento_id: establecimientoId,
+            nonce: eventShowData.nonce,
+          },
+          success: function (response) {
+            if (response.success) {
+              // Si el establecimiento tiene un lugar, pre-seleccionarlo
+              if (response.data.lugar_id) {
+                $("#edit_event_location").val(response.data.lugar_id);
+              }
+            }
+          },
+          error: function () {
+            console.error("Error al cargar datos del establecimiento");
+          },
+        });
+      } else {
+        // Ocultar la opción si no hay establecimiento seleccionado
+        $("#edit-use-organizer-location-option").hide();
+        if ($("#edit_event_location").val() === "USE_ORGANIZER_AS_LOCATION") {
+          $("#edit_event_location").val("");
         }
       }
     });

@@ -747,9 +747,14 @@ class Event_Show_Integrations
             'posts_per_page' => -1,
             'post_status'    => 'publish',
             'meta_query'     => array(
+                'relation' => 'OR',
+                array(
+                    'key'   => '_event_organizer_ref_id',
+                    'value' => $organizer_id,
+                ),
                 array(
                     'key'   => '_event_organizer_id',
-                    'value' => $organizer_id,
+                    'value' => 'establecimiento_' . $organizer_id,
                 ),
             ),
         );
