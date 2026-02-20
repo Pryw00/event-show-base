@@ -2,11 +2,9 @@
 
 /**
  * Plugin Name: Event Show
- * Plugin URI: https://example.com/event-show
  * Description: Plugin de gestión avanzada de eventos para WordPress, desarrollado conforme a los requerimientos IEEE 830-1998 definidos en el documento SRS.
- * Version: 1.2.11
+ * Version: 1.3.3
  * Author: Pryw00
- * Author URI: https://example.com
  * Text Domain: event-show-base
  * Domain Path: /languages
  * License: GPL v2 or later
@@ -21,7 +19,7 @@ if (! defined('ABSPATH')) {
 }
 
 // Constantes del plugin
-define('EVENT_SHOW_VERSION', '1.2.11');
+define('EVENT_SHOW_VERSION', '1.3.3');
 define('EVENT_SHOW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('EVENT_SHOW_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('EVENT_SHOW_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -111,6 +109,9 @@ class Event_Show
         // Enqueue scripts y styles
         add_action('wp_enqueue_scripts', array($this, 'enqueue_public_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+
+        // Hook para detectar aprobación de eventos
+        add_action('transition_post_status', array($this, 'event_status_transition'), 10, 3);
     }
 
     /**
@@ -250,6 +251,7 @@ class Event_Show
             array(
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('event_show_nonce'),
+                'minDaysAdvance' => absint(get_option('event_show_min_days_advance', 5)),
                 'i18n' => array(
                     'error' => __('Ha ocurrido un error. Por favor, inténtalo de nuevo.', 'event-show-base'),
                     'success' => __('¡Registro exitoso!', 'event-show-base'),
@@ -331,6 +333,36 @@ class Event_Show
                 'nonce' => wp_create_nonce('event_show_admin_nonce'),
             )
         );
+    }
+
+    /**
+     * Manejar transición de estado de posts de eventos
+     * Enviar notificación al usuario cuando un evento es aprobado
+     *
+     * @param string $new_status Nuevo estado
+     * @param string $old_status Estado anterior
+     * @param WP_Post $post Post object
+     */
+    public function event_status_transition($new_status, $old_status, $post)
+    {
+        // Solo procesar post type 'evento'
+        if ($post->post_type !== 'evento') {
+            return;
+        }
+
+        // Detectar cuando un evento pasa de pending a publish
+        if ($old_status === 'pending' && $new_status === 'publish') {
+            // Enviar notificación al usuario de que su evento fue aprobado
+            Event_Show_Notifications::send_user_event_approved($post->ID);
+
+            // Log de aprobación
+            Event_Show_Logger::log(
+                'event_approved',
+                'evento',
+                $post->ID,
+                sprintf(__('Evento "%s" aprobado y publicado', 'event-show-base'), $post->post_title)
+            );
+        }
     }
 }
 

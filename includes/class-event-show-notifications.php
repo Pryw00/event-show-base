@@ -17,6 +17,49 @@ if (! defined('ABSPATH')) {
 class Event_Show_Notifications
 {
     /**
+     * Procesar múltiples emails del administrador y autores
+     * 
+     * @param string $admin_emails Emails separados por comas
+     * @return array Array de emails válidos
+     */
+    private static function process_admin_emails($admin_emails)
+    {
+        $all_emails = array();
+
+        // Agregar emails configurados en ajustes
+        if (!empty($admin_emails)) {
+            // Separar por comas y limpiar espacios
+            $emails = array_map('trim', explode(',', $admin_emails));
+
+            // Filtrar solo emails válidos
+            $valid_emails = array_filter($emails, function ($email) {
+                return is_email($email);
+            });
+
+            $all_emails = $valid_emails;
+        }
+
+        // Agregar emails de usuarios con capacidad de editar eventos de otros (autores)
+        $authors = get_users(array(
+            'capability__in' => array('edit_others_eventos'),
+            'fields' => array('user_email'),
+        ));
+
+        foreach ($authors as $author) {
+            if (is_email($author->user_email) && !in_array($author->user_email, $all_emails)) {
+                $all_emails[] = $author->user_email;
+            }
+        }
+
+        // Si no hay emails válidos, usar el email predeterminado del sitio
+        if (empty($all_emails)) {
+            return array(get_option('admin_email'));
+        }
+
+        return $all_emails;
+    }
+
+    /**
      * Notificar a asistentes si se modifican datos clave del evento
      */
     public static function maybe_notify_event_update($event_id, $old_data, $new_data)
@@ -185,7 +228,8 @@ class Event_Show_Notifications
         }
 
         $event = get_post($event_id);
-        $admin_email = get_option('event_show_admin_email', get_option('admin_email'));
+        $admin_emails_string = get_option('event_show_admin_email', get_option('admin_email'));
+        $admin_emails = self::process_admin_emails($admin_emails_string);
 
         $subject = sprintf(
             __('Nuevo registro para el evento: %s', 'event-show-base'),
@@ -203,7 +247,10 @@ class Event_Show_Notifications
 
         $headers = array('Content-Type: text/html; charset=UTF-8');
 
-        wp_mail($admin_email, $subject, $message, $headers);
+        // Enviar a cada email del administrador
+        foreach ($admin_emails as $admin_email) {
+            wp_mail($admin_email, $subject, $message, $headers);
+        }
     }
 
     /**
@@ -277,7 +324,8 @@ class Event_Show_Notifications
 
         $event = get_post($event_id);
         $author = get_user_by('id', $event->post_author);
-        $admin_email = get_option('event_show_admin_email', get_option('admin_email'));
+        $admin_emails_string = get_option('event_show_admin_email', get_option('admin_email'));
+        $admin_emails = self::process_admin_emails($admin_emails_string);
 
         $subject = sprintf(
             __('Nuevo evento pendiente de aprobación: %s', 'event-show-base'),
@@ -293,7 +341,114 @@ class Event_Show_Notifications
 
         $headers = array('Content-Type: text/html; charset=UTF-8');
 
-        wp_mail($admin_email, $subject, $message, $headers);
+        // Enviar a cada email del administrador
+        foreach ($admin_emails as $admin_email) {
+            wp_mail($admin_email, $subject, $message, $headers);
+        }
+    }
+
+    /**
+     * Enviar notificación al usuario de que su evento fue recibido y está en revisión
+     *
+     * @param int $event_id ID del evento
+     */
+    public static function send_user_event_submission_confirmation($event_id)
+    {
+        if (! get_option('event_show_email_notifications_enabled', true)) {
+            return;
+        }
+
+        $event = get_post($event_id);
+        $author = get_user_by('id', $event->post_author);
+
+        if (!$author || !$author->user_email) {
+            return;
+        }
+
+        $event_date = get_post_meta($event_id, '_event_date', true);
+        $event_time = get_post_meta($event_id, '_event_time', true);
+
+        $subject = sprintf(
+            __('¡Evento recibido! "%s" está en revisión', 'event-show-base'),
+            $event->post_title
+        );
+
+        $message = self::get_email_template('user_event_submission', array(
+            'author_name' => $author->display_name,
+            'event_title' => $event->post_title,
+            'event_date' => $event_date,
+            'event_time' => $event_time,
+        ));
+
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+
+        // Remitente personalizado
+        $from_name = get_option('event_show_email_from_name', 'Event Show');
+        $from_email = get_option('event_show_email_from_address', get_option('admin_email'));
+        add_filter('wp_mail_from', function () use ($from_email) {
+            return $from_email;
+        });
+        add_filter('wp_mail_from_name', function () use ($from_name) {
+            return $from_name;
+        });
+
+        wp_mail($author->user_email, $subject, $message, $headers);
+
+        remove_all_filters('wp_mail_from');
+        remove_all_filters('wp_mail_from_name');
+    }
+
+    /**
+     * Enviar notificación al usuario de que su evento fue aprobado
+     *
+     * @param int $event_id ID del evento
+     */
+    public static function send_user_event_approved($event_id)
+    {
+        if (! get_option('event_show_email_notifications_enabled', true)) {
+            return;
+        }
+
+        $event = get_post($event_id);
+        $author = get_user_by('id', $event->post_author);
+
+        if (!$author || !$author->user_email) {
+            return;
+        }
+
+        $event_date = get_post_meta($event_id, '_event_date', true);
+        $event_time = get_post_meta($event_id, '_event_time', true);
+        $event_link = get_permalink($event_id);
+
+        $subject = sprintf(
+            __('¡Evento aprobado! "%s" ya está publicado', 'event-show-base'),
+            $event->post_title
+        );
+
+        $message = self::get_email_template('user_event_approved', array(
+            'author_name' => $author->display_name,
+            'event_title' => $event->post_title,
+            'event_date' => $event_date,
+            'event_time' => $event_time,
+            'event_link' => $event_link,
+        ));
+
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+
+        // Remitente personalizado
+        $from_name = get_option('event_show_email_from_name', 'Event Show');
+        $from_email = get_option('event_show_email_from_address', get_option('admin_email'));
+        add_filter('wp_mail_from', function () use ($from_email) {
+            return $from_email;
+        });
+        add_filter('wp_mail_from_name', function () use ($from_name) {
+            return $from_name;
+        });
+
+        wp_mail($author->user_email, $subject, $message, $headers);
+
+        remove_all_filters('wp_mail_from');
+        remove_all_filters('wp_mail_from_name');
     }
 
     /**
@@ -368,6 +523,43 @@ class Event_Show_Notifications
 						<p>El usuario <strong>{author_name}</strong> ({author_email}) ha enviado un nuevo evento:</p>
 						<p><strong>Título:</strong> {event_title}</p>
 						<p><a href="{edit_link}" style="display: inline-block; padding: 10px 20px; background-color: #3498db; color: #fff; text-decoration: none; border-radius: 5px;">Revisar y Aprobar</a></p>
+					</div>
+				</body>
+				</html>
+			',
+            'user_event_submission' => '
+				<html>
+				<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+					<div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+						<h2 style="color: #2c3e50;">¡Hola {author_name}!</h2>
+						<p style="font-size: 16px;">Hemos recibido tu evento <strong>{event_title}</strong> correctamente.</p>
+						<div style="background-color: #fff; padding: 15px; border-left: 4px solid #f39c12; margin: 20px 0;">
+							<p style="margin: 5px 0;"><strong>📅 Fecha:</strong> {event_date}</p>
+							<p style="margin: 5px 0;"><strong>🕔 Hora:</strong> {event_time}</p>
+						</div>
+						<p style="background-color: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;">
+							<strong>⌛ En revisión:</strong> Tu evento está siendo revisado por nuestro equipo. Te notificaremos por email cuando sea aprobado y publicado.
+						</p>
+						<p style="color: #7f8c8d; font-size: 14px; margin-top: 30px;">¡Gracias por tu paciencia!</p>
+					</div>
+				</body>
+				</html>
+			',
+            'user_event_approved' => '
+				<html>
+				<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+					<div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #d4edda; border-radius: 8px;">
+						<h2 style="color: #155724;">✅ ¡Felicidades {author_name}!</h2>
+						<p style="font-size: 16px;">Tu evento <strong>{event_title}</strong> ha sido aprobado y ya está publicado.</p>
+						<div style="background-color: #fff; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
+							<p style="margin: 5px 0;"><strong>📅 Fecha:</strong> {event_date}</p>
+							<p style="margin: 5px 0;"><strong>🕔 Hora:</strong> {event_time}</p>
+						</div>
+						<p>Tu evento ahora es visible para todos los usuarios y pueden registrarse para asistir.</p>
+						<p style="text-align: center; margin-top: 30px;">
+							<a href="{event_link}" style="display: inline-block; padding: 12px 30px; background-color: #28a745; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold;">Ver Mi Evento Publicado</a>
+						</p>
+						<p style="color: #7f8c8d; font-size: 14px; margin-top: 30px; text-align: center;">¡Que tengas un evento exitoso!</p>
 					</div>
 				</body>
 				</html>

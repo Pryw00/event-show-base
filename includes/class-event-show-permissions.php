@@ -180,8 +180,8 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Editores también pueden aprobar
-        return user_can($user_id, 'edit_others_posts');
+        // Autores (usuarios con permiso para editar eventos de otros) pueden aprobar
+        return user_can($user_id, 'edit_others_eventos');
     }
 
     /**
@@ -247,8 +247,8 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Por defecto, usuarios registrados pueden solicitar ser organizadores
-        return is_user_logged_in();
+        // Solo usuarios con capacidad de editar eventos de otros (autores) pueden crear organizadores
+        return user_can($user_id, 'edit_others_eventos');
     }
 
     /**
@@ -344,8 +344,13 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Solo administradores pueden aprobar
-        return user_can($user_id, 'manage_options');
+        // Los administradores pueden aprobar
+        if (user_can($user_id, 'manage_options')) {
+            return true;
+        }
+
+        // Autores (usuarios con permiso para editar eventos de otros) pueden aprobar organizadores
+        return user_can($user_id, 'edit_others_eventos');
     }
 
     /**
@@ -378,6 +383,11 @@ class Event_Show_Permissions
 
         // Los administradores siempre pueden ver
         if (user_can($user_id, 'manage_options')) {
+            return true;
+        }
+
+        // Autores (usuarios con permiso para editar eventos de otros) pueden ver todos los asistentes
+        if (user_can($user_id, 'edit_others_eventos')) {
             return true;
         }
 
@@ -419,8 +429,13 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Solo administradores pueden gestionar
-        return user_can($user_id, 'manage_options');
+        // Administradores pueden gestionar
+        if (user_can($user_id, 'manage_options')) {
+            return true;
+        }
+
+        // Autores (usuarios con permiso para editar eventos de otros) pueden gestionar asistentes
+        return user_can($user_id, 'edit_others_eventos');
     }
 
     /**
@@ -512,8 +527,13 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Solo administradores pueden ver logs por defecto
-        return user_can($user_id, 'manage_options');
+        // Administradores pueden ver logs
+        if (user_can($user_id, 'manage_options')) {
+            return true;
+        }
+
+        // Autores (usuarios con permiso para editar eventos de otros) también pueden ver logs
+        return user_can($user_id, 'edit_others_eventos');
     }
 
     /**
@@ -543,7 +563,7 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Solo administradores pueden gestionar configuración por defecto
+        // Solo administradores pueden gestionar configuración
         return user_can($user_id, 'manage_options');
     }
 
@@ -574,13 +594,13 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Los administradores siempre pueden gestionar taxonomías
+        // Solo administradores pueden gestionar taxonomías directamente en el backend
         if (user_can($user_id, 'manage_options')) {
             return true;
         }
 
-        // Capacidad estándar de WordPress
-        return user_can($user_id, 'manage_categories');
+        // Autores pueden crear organizadores pero no acceder a gestión de taxonomías
+        return false;
     }
 
     /**

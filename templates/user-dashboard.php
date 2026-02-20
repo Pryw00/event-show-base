@@ -354,20 +354,6 @@ $user_events = new WP_Query(array(
                                         <?php echo _n('Evento organizado', 'Eventos organizados', $eventos_count, 'event-show-base'); ?>
                                     </span>
                                 </div>
-
-                                <div class="card-actions" style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                    <a href="<?php echo esc_url(get_permalink($establecimiento->ID)); ?>" class="button button-small" target="_blank" style="flex: 1;">
-                                        <?php esc_html_e('Ver', 'event-show-base'); ?>
-                                    </a>
-                                    <a href="<?php echo esc_url(get_edit_post_link($establecimiento->ID)); ?>" class="button button-small" style="flex: 1;">
-                                        <?php esc_html_e('Editar', 'event-show-base'); ?>
-                                    </a>
-                                    <?php if ($eventos_count > 0) : ?>
-                                        <a href="<?php echo esc_url(add_query_arg('organizador', $establecimiento->ID, home_url('/eventos/'))); ?>" class="button button-small button-primary" style="flex: 1;">
-                                            <?php esc_html_e('Ver Eventos', 'event-show-base'); ?>
-                                        </a>
-                                    <?php endif; ?>
-                                </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -411,7 +397,7 @@ $user_events = new WP_Query(array(
                         <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; text-align: left;">
                             <strong><?php esc_html_e('¿Cómo crear un establecimiento?', 'event-show-base'); ?></strong>
                             <p style="margin: 10px 0 0 0; color: #666; font-size: 0.95em;">
-                                <?php esc_html_e('Ve a la pestaña de "Lugares" en este dashboard y crea tu establecimiento allí. Luego podrás usarlo como organizador de tus eventos.', 'event-show-base'); ?>
+                                <?php esc_html_e('Ve a la pestaña de "Mis Establecimientos" en este dashboard y crea tu establecimiento allí. Luego podrás usarlo como organizador de tus eventos.', 'event-show-base'); ?>
                             </p>
                         </div>
                     </div>
@@ -427,20 +413,19 @@ $user_events = new WP_Query(array(
             <!-- Sección de Organizadores de Taxonomía (siempre visible) -->
             <div class="dashboard-section-header" style="display:flex;justify-content:space-between;align-items:center;">
                 <?php if ($has_establishments) : ?>
-                    <h3><?php esc_html_e('Organizadores (Taxonomía)', 'event-show-base'); ?></h3>
+                    <h3><?php esc_html_e('Organizadores Personalizados', 'event-show-base'); ?></h3>
                 <?php else : ?>
                     <h3><?php esc_html_e('Mis Organizadores', 'event-show-base'); ?></h3>
                 <?php endif; ?>
-                <button class="button" id="create-organizer-btn"><?php esc_html_e('Crear Nuevo Organizador', 'event-show-base'); ?></button>
             </div>
 
             <?php if ($has_establishments) : ?>
                 <p class="description" style="margin-bottom: 20px;">
-                    <?php esc_html_e('Además de establecimientos, también puedes crear organizadores personalizados.', 'event-show-base'); ?>
+                    <?php esc_html_e('Los organizadores que tengas asignados puedes usarlos para tus eventos.', 'event-show-base'); ?>
                 </p>
             <?php else : ?>
                 <p class="description" style="margin-bottom: 20px;">
-                    <?php esc_html_e('Los organizadores te ayudan a identificar quién organiza cada evento.', 'event-show-base'); ?>
+                    <?php esc_html_e('Los organizadores que tengas asignados te ayudan a identificar quién organiza cada evento.', 'event-show-base'); ?>
                 </p>
             <?php endif; ?>
 
@@ -619,14 +604,10 @@ $user_events = new WP_Query(array(
             <?php else : ?>
                 <div class="dashboard-empty" style="text-align: center; padding: 40px; background: #f9f9f9; border-radius: 8px;">
                     <span class="dashicons dashicons-groups" style="font-size: 64px; color: #ccc; margin-bottom: 20px;"></span>
-                    <h4><?php esc_html_e('No tienes organizadores aún', 'event-show-base'); ?></h4>
+                    <h4><?php esc_html_e('No tienes organizadores asignados', 'event-show-base'); ?></h4>
                     <p style="color: #666; margin-bottom: 20px;">
-                        <?php esc_html_e('Los organizadores te ayudan a identificar quién organiza cada evento.', 'event-show-base'); ?>
+                        <?php esc_html_e('Los organizadores son asignados por los administradores. Contacta con el administrador del sitio para que te asigne organizadores.', 'event-show-base'); ?>
                     </p>
-                    <button class="button button-primary button-large" id="create-organizer-btn-empty">
-                        <span class="dashicons dashicons-plus-alt" style="vertical-align: middle;"></span>
-                        <?php esc_html_e('Crear Primer Organizador', 'event-show-base'); ?>
-                    </button>
                 </div>
             <?php endif; ?>
 

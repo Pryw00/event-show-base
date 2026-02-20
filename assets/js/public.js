@@ -99,8 +99,14 @@
     // Datepicker
     initDatepicker();
 
+    // Datetime picker para campos combinados de fecha/hora
+    initDatetimePicker();
+
     // Modales
     initModals();
+
+    // Manejar checkboxes de hora indefinida
+    initTimeIndefiniteCheckboxes();
 
     // Paginación para Grid y List
     initEventPagination();
@@ -218,6 +224,85 @@
       var $btn = $form.find(".event-submit-btn");
       var $messages = $form.find(".form-messages");
 
+      // Convertir datetime-local a formatos separados
+      var datetimeStart = $("#event_datetime_start").val();
+      if (datetimeStart) {
+        var dtStart = new Date(datetimeStart);
+        var dateStr =
+          String(dtStart.getDate()).padStart(2, "0") +
+          "/" +
+          String(dtStart.getMonth() + 1).padStart(2, "0") +
+          "/" +
+          dtStart.getFullYear();
+        var timeStr =
+          String(dtStart.getHours()).padStart(2, "0") +
+          ":" +
+          String(dtStart.getMinutes()).padStart(2, "0");
+        $("#event_date_submit").val(dateStr);
+        $("#event_time_submit").val(timeStr);
+      }
+
+      var datetimeEnd = $("#event_datetime_end").val();
+      if (datetimeEnd) {
+        var dtEnd = new Date(datetimeEnd);
+        var dateEndStr =
+          String(dtEnd.getDate()).padStart(2, "0") +
+          "/" +
+          String(dtEnd.getMonth() + 1).padStart(2, "0") +
+          "/" +
+          dtEnd.getFullYear();
+        var timeEndStr =
+          String(dtEnd.getHours()).padStart(2, "0") +
+          ":" +
+          String(dtEnd.getMinutes()).padStart(2, "0");
+        $("#event_date_end").val(dateEndStr);
+        $("#event_time_end").val(timeEndStr);
+      }
+
+      // Validar fecha de evento
+      if (datetimeStart) {
+        var minDaysAdvance =
+          eventShowData && eventShowData.minDaysAdvance
+            ? parseInt(eventShowData.minDaysAdvance)
+            : 5;
+
+        var selectedDate = new Date(datetimeStart);
+        var minDate = new Date();
+        minDate.setDate(minDate.getDate() + minDaysAdvance);
+        minDate.setHours(0, 0, 0, 0);
+        selectedDate.setHours(0, 0, 0, 0);
+
+        if (selectedDate < minDate) {
+          var minDateStr =
+            String(minDate.getDate()).padStart(2, "0") +
+            "/" +
+            String(minDate.getMonth() + 1).padStart(2, "0") +
+            "/" +
+            minDate.getFullYear();
+
+          $messages
+            .removeClass("success")
+            .addClass("error")
+            .html(
+              "⚠️ La fecha del evento debe ser al menos " +
+                minDaysAdvance +
+                " día" +
+                (minDaysAdvance > 1 ? "s" : "") +
+                " a partir de hoy. Fecha mínima permitida: " +
+                minDateStr +
+                ".",
+            )
+            .show();
+          $("html, body").animate(
+            {
+              scrollTop: $messages.offset().top - 100,
+            },
+            500,
+          );
+          return false;
+        }
+      }
+
       $btn.prop("disabled", true);
       $btn.find(".btn-text").hide();
       $btn.find(".btn-loading").show();
@@ -245,6 +330,21 @@
               .show();
             $form[0].reset();
             $("#event_banner_preview, #event_thumbnail_preview").hide();
+
+            // Cerrar modal si existe y recargar la página
+            var $modal = $form.closest(".event-modal-overlay, .event-modal");
+            if ($modal.length) {
+              setTimeout(function () {
+                $modal.fadeOut(300, function () {
+                  location.reload();
+                });
+              }, 1500);
+            } else {
+              // Si no hay modal, recargar después del mensaje
+              setTimeout(function () {
+                location.reload();
+              }, 2000);
+            }
           } else {
             $messages
               .removeClass("success")
@@ -496,13 +596,63 @@
    */
   function initDatepicker() {
     if (typeof $.fn.datepicker !== "undefined") {
+      // Obtener días mínimos de anticipación desde la configuración
+      var minDaysAdvance =
+        eventShowData && eventShowData.minDaysAdvance
+          ? parseInt(eventShowData.minDaysAdvance)
+          : 5;
+
+      // Calcular la fecha mínima permitida
+      var minDate = new Date();
+      minDate.setDate(minDate.getDate() + minDaysAdvance);
+
       $(".event-datepicker").datepicker({
         dateFormat: "dd/mm/yy",
-        minDate: 0,
+        minDate: minDate,
         changeMonth: true,
         changeYear: true,
+        yearRange: "c:c+5",
+        beforeShow: function (input, inst) {
+          // Asegurar que el calendario se muestre correctamente
+          setTimeout(function () {
+            inst.dpDiv.css({
+              "z-index": 9999,
+            });
+          }, 0);
+        },
+        onSelect: function (dateText, inst) {
+          // Trigger change event para validaciones
+          $(this).trigger("change");
+        },
       });
     }
+  }
+
+  /**
+   * Inicializar datetime picker para campos combinados
+   */
+  function initDatetimePicker() {
+    // Obtener días mínimos de anticipación
+    var minDaysAdvance =
+      eventShowData && eventShowData.minDaysAdvance
+        ? parseInt(eventShowData.minDaysAdvance)
+        : 5;
+
+    // Calcular fecha/hora mínima
+    var minDateTime = new Date();
+    minDateTime.setDate(minDateTime.getDate() + minDaysAdvance);
+
+    // Formatear para datetime-local (YYYY-MM-DDTHH:MM)
+    var minDateTimeStr =
+      minDateTime.getFullYear() +
+      "-" +
+      String(minDateTime.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(minDateTime.getDate()).padStart(2, "0") +
+      "T00:00";
+
+    // Aplicar al campo datetime-local
+    $(".event-datetime-picker").attr("min", minDateTimeStr);
   }
 
   /**
@@ -652,6 +802,57 @@
       var $form = $(this);
       var $btn = $form.find("button[type='submit']");
       var $messages = $form.find(".form-messages");
+
+      // Validar fecha de evento
+      var eventDate = $("#edit_event_date").val();
+      if (eventDate) {
+        var minDaysAdvance =
+          eventShowData && eventShowData.minDaysAdvance
+            ? parseInt(eventShowData.minDaysAdvance)
+            : 5;
+
+        // Parsear fecha (formato dd/mm/yyyy)
+        var parts = eventDate.split("/");
+        if (parts.length === 3) {
+          var selectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
+          var today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          var minDate = new Date();
+          minDate.setDate(minDate.getDate() + minDaysAdvance);
+          minDate.setHours(0, 0, 0, 0);
+
+          if (selectedDate < minDate) {
+            var minDateStr =
+              String(minDate.getDate()).padStart(2, "0") +
+              "/" +
+              String(minDate.getMonth() + 1).padStart(2, "0") +
+              "/" +
+              minDate.getFullYear();
+
+            $messages
+              .removeClass("success")
+              .addClass("error")
+              .html(
+                "⚠️ La fecha del evento debe ser al menos " +
+                  minDaysAdvance +
+                  " día" +
+                  (minDaysAdvance > 1 ? "s" : "") +
+                  " a partir de hoy. Fecha mínima permitida: " +
+                  minDateStr +
+                  ".",
+              )
+              .show();
+            $("html, body").animate(
+              {
+                scrollTop: $messages.offset().top - 100,
+              },
+              500,
+            );
+            return false;
+          }
+        }
+      }
 
       $btn.prop("disabled", true).text("Guardando...");
 
@@ -1148,6 +1349,44 @@
           $btn.find(".btn-loading").hide();
         }
       },
+    });
+  }
+
+  /**
+   * Inicializar manejo de checkboxes de hora indefinida
+   */
+  function initTimeIndefiniteCheckboxes() {
+    // Manejar checkbox de hora indefinida en formulario de edición
+    $(document).on("change", "#edit_event_time_indef", function () {
+      var $timeInput = $("#edit_event_time");
+      if ($(this).is(":checked")) {
+        $timeInput.prop("required", false).prop("disabled", true).val("");
+      } else {
+        $timeInput.prop("required", true).prop("disabled", false);
+      }
+    });
+
+    $(document).on("change", "#edit_event_end_time_indef", function () {
+      var $timeInput = $("#edit_event_end_time");
+      if ($(this).is(":checked")) {
+        $timeInput.prop("disabled", true).val("");
+      } else {
+        $timeInput.prop("disabled", false);
+      }
+    });
+
+    // Reinicializar datepicker cuando se abre el modal de edición
+    $(document).on("click", ".edit-event-link", function () {
+      setTimeout(function () {
+        initDatepicker();
+      }, 100);
+    });
+
+    // Reinicializar datepicker cuando se abre el modal de crear evento
+    $(document).on("click", "#open-create-event-modal", function () {
+      setTimeout(function () {
+        initDatepicker();
+      }, 100);
     });
   }
 })(jQuery);

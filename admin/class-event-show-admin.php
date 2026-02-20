@@ -50,6 +50,34 @@ class Event_Show_Admin
     }
 
     /**
+     * Procesar múltiples emails del administrador
+     * 
+     * @param string $admin_emails Emails separados por comas
+     * @return array Array de emails válidos
+     */
+    private function process_admin_emails($admin_emails)
+    {
+        if (empty($admin_emails)) {
+            return array(get_option('admin_email'));
+        }
+
+        // Separar por comas y limpiar espacios
+        $emails = array_map('trim', explode(',', $admin_emails));
+
+        // Filtrar solo emails válidos
+        $valid_emails = array_filter($emails, function ($email) {
+            return is_email($email);
+        });
+
+        // Si no hay emails válidos, usar el email predeterminado del sitio
+        if (empty($valid_emails)) {
+            return array(get_option('admin_email'));
+        }
+
+        return $valid_emails;
+    }
+
+    /**
      * Enviar correo de prueba al administrador con los datos de ejemplo
      */
     public function ajax_send_test_email()
@@ -74,7 +102,8 @@ class Event_Show_Admin
                 $subject = 'Mensaje de prueba';
             }
         }
-        $admin_email = get_option('event_show_admin_email', get_option('admin_email'));
+        $admin_emails_string = get_option('event_show_admin_email', get_option('admin_email'));
+        $admin_emails = $this->process_admin_emails($admin_emails_string);
         $from_name = get_option('event_show_email_from_name', 'Event Show');
         $from_email = get_option('event_show_email_from_address', get_option('admin_email'));
         $headers = array('Content-Type: text/html; charset=UTF-8');
@@ -98,10 +127,19 @@ class Event_Show_Admin
             $template = str_replace($k, $v, $template);
             $subject = str_replace($k, $v, $subject);
         }
-        $result = wp_mail($admin_email, $subject, $template, $headers);
+
+        // Enviar a cada email del administrador
+        $success = true;
+        foreach ($admin_emails as $admin_email) {
+            $result = wp_mail($admin_email, $subject, $template, $headers);
+            if (!$result) {
+                $success = false;
+            }
+        }
+
         remove_all_filters('wp_mail_from');
         remove_all_filters('wp_mail_from_name');
-        wp_send_json(['success' => $result]);
+        wp_send_json(['success' => $success]);
     }
     /**
      * Mostrar campo de organizadores en el perfil de usuario
@@ -346,13 +384,13 @@ class Event_Show_Admin
                             </label>
                         </th>
                         <td>
-                            <input type="email"
+                            <input type="text"
                                 id="event_show_admin_email"
                                 name="event_show_admin_email"
                                 value="<?php echo esc_attr(get_option('event_show_admin_email', get_option('admin_email'))); ?>"
                                 class="regular-text">
                             <p class="description">
-                                <?php esc_html_e('Email para recibir notificaciones de nuevos registros y eventos', 'event-show-base'); ?>
+                                <?php esc_html_e('Email(s) para recibir notificaciones de nuevos registros y eventos. Para múltiples emails, separar con comas (ej: email1@ejemplo.com, email2@ejemplo.com)', 'event-show-base'); ?>
                             </p>
                         </td>
                     </tr>
@@ -588,6 +626,11 @@ class Event_Show_Admin
      */
     public function render_logs_page()
     {
+        // Verificar permisos
+        if (! Event_Show_Permissions::can_view_logs()) {
+            wp_die(__('No tienes permisos para acceder a esta página.', 'event-show-base'));
+        }
+
         $logs = Event_Show_Logger::get_logs(array('limit' => 100));
     ?>
         <div class="wrap">
@@ -638,6 +681,11 @@ class Event_Show_Admin
      */
     public function render_attendees_page()
     {
+        // Verificar permisos básicos
+        if (! Event_Show_Permissions::can_view_attendees()) {
+            wp_die(__('No tienes permisos para acceder a esta página.', 'event-show-base'));
+        }
+
         // Obtener evento seleccionado
         $selected_event_id = isset($_GET['event_id']) ? absint($_GET['event_id']) : 0;
 
@@ -1158,6 +1206,11 @@ class Event_Show_Admin
      */
     public function render_approve_organizers_page()
     {
+        // Verificar permisos
+        if (! Event_Show_Permissions::can_approve_organizer()) {
+            wp_die(__('No tienes permisos para acceder a esta página.', 'event-show-base'));
+        }
+
         // Procesar acciones de aprobación/rechazo
         if (isset($_POST['action']) && isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'approve_organizers')) {
             $action = sanitize_text_field($_POST['action']);

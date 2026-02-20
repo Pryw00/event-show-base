@@ -311,7 +311,8 @@ class Event_Show_Ajax
         update_post_meta($event_id, '_event_banner', $banner_id);
         update_post_meta($event_id, '_event_thumbnail', $thumb_id);
         update_post_meta($event_id, '_use_default_template', '1');
-        update_post_meta($event_id, '_enable_registration', '1');
+        // Registro de asistentes deshabilitado por defecto para eventos de usuarios
+        update_post_meta($event_id, '_enable_registration', '0');
 
         // Asignar taxonomías
         if ($category) {
@@ -348,6 +349,9 @@ class Event_Show_Ajax
 
         // Enviar notificación al admin
         Event_Show_Notifications::send_admin_new_event_submission($event_id);
+
+        // Enviar notificación al usuario de confirmación de recepción
+        Event_Show_Notifications::send_user_event_submission_confirmation($event_id);
 
         // Log
         Event_Show_Logger::log(
@@ -834,6 +838,13 @@ class Event_Show_Ajax
             ));
         }
 
+        // Verificar permisos: solo administradores y autores pueden crear/editar organizadores
+        if (!Event_Show_Permissions::can_create_organizer()) {
+            wp_send_json_error(array(
+                'message' => __('No tienes permisos para crear organizadores', 'event-show-base'),
+            ));
+        }
+
         $current_user_id = get_current_user_id();
         $organizer_id = isset($_POST['organizer_id']) ? intval($_POST['organizer_id']) : 0;
         $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
@@ -930,9 +941,9 @@ class Event_Show_Ajax
             $current_user = wp_get_current_user();
             update_term_meta($term_id, 'owner_name', $current_user->display_name);
 
-            // Estado: pendiente hasta que un admin lo apruebe
-            // Solo admins pueden crear organizadores ya aprobados
-            $status = current_user_can('manage_options') ? 'approved' : 'pending';
+            // Estado: Los administradores y autores crean organizadores ya aprobados
+            // Solo se marca como pending si es cualquier otro usuario (no debería llegar aquí por la validación previa)
+            $status = (current_user_can('manage_options') || current_user_can('edit_others_eventos')) ? 'approved' : 'pending';
             update_term_meta($term_id, 'status', $status);
 
             // Log de creación
@@ -961,7 +972,7 @@ class Event_Show_Ajax
         if ($organizer_id) {
             $message = __('Organizador actualizado correctamente', 'event-show-base');
         } else {
-            if (current_user_can('manage_options')) {
+            if (current_user_can('manage_options') || current_user_can('edit_others_eventos')) {
                 $message = __('Organizador creado y aprobado correctamente', 'event-show-base');
             } else {
                 $message = __('Organizador creado. Está pendiente de aprobación por un administrador antes de poder usarse.', 'event-show-base');
@@ -971,7 +982,7 @@ class Event_Show_Ajax
         wp_send_json_success(array(
             'message' => $message,
             'term_id' => $term_id,
-            'needs_approval' => !$organizer_id && !current_user_can('manage_options'),
+            'needs_approval' => !$organizer_id && !current_user_can('manage_options') && !current_user_can('edit_others_eventos'),
         ));
     }
 }

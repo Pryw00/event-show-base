@@ -43,46 +43,27 @@ $current_user = wp_get_current_user();
 
         <div class="form-row">
             <div class="form-group form-col-half">
-                <label for="event_date_submit">
-                    <?php esc_html_e('Fecha de Inicio', 'event-show-base'); ?> *
+                <label for="event_datetime_start">
+                    <?php esc_html_e('Fecha y Hora de Inicio', 'event-show-base'); ?> *
                 </label>
-                <input type="text"
-                    id="event_date_submit"
-                    name="event_date"
-                    class="form-control event-datepicker"
-                    placeholder="dd/mm/yyyy"
+                <input type="datetime-local"
+                    id="event_datetime_start"
+                    name="event_datetime_start"
+                    class="form-control event-datetime-picker"
                     required>
+                <input type="hidden" id="event_date_submit" name="event_date">
+                <input type="hidden" id="event_time_submit" name="event_time">
             </div>
             <div class="form-group form-col-half">
-                <label for="event_time_submit">
-                    <?php esc_html_e('Hora de Inicio', 'event-show-base'); ?> *
+                <label for="event_datetime_end">
+                    <?php esc_html_e('Fecha y Hora de Fin', 'event-show-base'); ?>
                 </label>
-                <input type="time"
-                    id="event_time_submit"
-                    name="event_time"
-                    class="form-control"
-                    required>
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group form-col-half">
-                <label for="event_date_end">
-                    <?php esc_html_e('Fecha de Fin', 'event-show-base'); ?>
-                </label>
-                <input type="text"
-                    id="event_date_end"
-                    name="event_date_end"
-                    class="form-control event-datepicker"
-                    placeholder="dd/mm/yyyy">
-            </div>
-            <div class="form-group form-col-half">
-                <label for="event_time_end">
-                    <?php esc_html_e('Hora de Fin', 'event-show-base'); ?>
-                </label>
-                <input type="time"
-                    id="event_time_end"
-                    name="event_time_end"
-                    class="form-control">
+                <input type="datetime-local"
+                    id="event_datetime_end"
+                    name="event_datetime_end"
+                    class="form-control event-datetime-picker">
+                <input type="hidden" id="event_date_end" name="event_date_end">
+                <input type="hidden" id="event_time_end" name="event_time_end">
             </div>
         </div>
 
