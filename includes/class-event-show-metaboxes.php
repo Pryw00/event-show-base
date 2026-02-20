@@ -168,6 +168,145 @@ class Event_Show_Metaboxes
                         <p class="description"><?php esc_html_e('Hora de fin del evento (opcional)', 'event-show-base'); ?></p>
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="event_organizer_id"><?php esc_html_e('Organizador', 'event-show-base'); ?></label>
+                    </th>
+                    <td>
+                        <?php
+                        // Obtener valor actual del organizador
+                        $current_organizer_value = get_post_meta($post->ID, '_event_organizer_id', true);
+
+                        // Si no hay valor guardado, intentar obtener de taxonomía (compatibilidad con eventos antiguos)
+                        if (empty($current_organizer_value)) {
+                            $organizadores_terms = wp_get_post_terms($post->ID, 'organizador', array('fields' => 'ids'));
+                            if (!empty($organizadores_terms) && !is_wp_error($organizadores_terms)) {
+                                $current_organizer_value = 'organizador_' . $organizadores_terms[0];
+                            }
+                        }
+
+                        // Verificar si está disponible el plugin de establecimientos
+                        $establecimientos_available = post_type_exists('establecimiento');
+                        ?>
+                        <select name="event_organizer_id" id="event_organizer_id" style="width: 100%; max-width: 500px;">
+                            <option value=""><?php esc_html_e('-- Seleccionar organizador --', 'event-show-base'); ?></option>
+
+                            <?php if ($establecimientos_available) : ?>
+                                <?php
+                                // Obtener establecimientos
+                                $establecimientos = get_posts(array(
+                                    'post_type' => 'establecimiento',
+                                    'posts_per_page' => -1,
+                                    'orderby' => 'title',
+                                    'order' => 'ASC',
+                                    'post_status' => 'publish'
+                                ));
+
+                                if (!empty($establecimientos)) : ?>
+                                    <optgroup label="<?php esc_attr_e('Establecimientos', 'event-show-base'); ?>">
+                                        <?php foreach ($establecimientos as $est) :
+                                            $value = 'establecimiento_' . $est->ID;
+                                        ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current_organizer_value, $value); ?>>
+                                                <?php echo esc_html($est->post_title); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <?php
+                            // Obtener términos de la taxonomía organizador
+                            $organizadores = get_terms(array(
+                                'taxonomy' => 'organizador',
+                                'hide_empty' => false,
+                                'orderby' => 'name',
+                                'order' => 'ASC'
+                            ));
+
+                            if (!empty($organizadores) && !is_wp_error($organizadores)) : ?>
+                                <optgroup label="<?php esc_attr_e('Organizadores (Taxonomía)', 'event-show-base'); ?>">
+                                    <?php foreach ($organizadores as $org) :
+                                        $value = 'organizador_' . $org->term_id;
+                                    ?>
+                                        <option value="<?php echo esc_attr($value); ?>" <?php selected($current_organizer_value, $value); ?>>
+                                            <?php echo esc_html($org->name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                        </select>
+                        <p class="description"><?php esc_html_e('Selecciona el organizador del evento', 'event-show-base'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="event_lugar_id"><?php esc_html_e('Lugar', 'event-show-base'); ?></label>
+                    </th>
+                    <td>
+                        <?php
+                        // Obtener valor actual del lugar
+                        $current_lugar_value = get_post_meta($post->ID, '_event_lugar_id', true);
+
+                        // Si no hay valor guardado, intentar obtener de taxonomía (compatibilidad con eventos antiguos)
+                        if (empty($current_lugar_value)) {
+                            $lugares_terms = wp_get_post_terms($post->ID, 'lugar', array('fields' => 'ids'));
+                            if (!empty($lugares_terms) && !is_wp_error($lugares_terms)) {
+                                $current_lugar_value = 'lugar_' . $lugares_terms[0];
+                            }
+                        }
+                        ?>
+                        <select name="event_lugar_id" id="event_lugar_id" style="width: 100%; max-width: 500px;">
+                            <option value=""><?php esc_html_e('-- Seleccionar lugar --', 'event-show-base'); ?></option>
+
+                            <?php if ($establecimientos_available) : ?>
+                                <?php
+                                // Obtener establecimientos
+                                $establecimientos = get_posts(array(
+                                    'post_type' => 'establecimiento',
+                                    'posts_per_page' => -1,
+                                    'orderby' => 'title',
+                                    'order' => 'ASC',
+                                    'post_status' => 'publish'
+                                ));
+
+                                if (!empty($establecimientos)) : ?>
+                                    <optgroup label="<?php esc_attr_e('Establecimientos', 'event-show-base'); ?>">
+                                        <?php foreach ($establecimientos as $est) :
+                                            $value = 'establecimiento_' . $est->ID;
+                                        ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected($current_lugar_value, $value); ?>>
+                                                <?php echo esc_html($est->post_title); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <?php
+                            // Obtener términos de la taxonomía lugar
+                            $lugares = get_terms(array(
+                                'taxonomy' => 'lugar',
+                                'hide_empty' => false,
+                                'orderby' => 'name',
+                                'order' => 'ASC'
+                            ));
+
+                            if (!empty($lugares) && !is_wp_error($lugares)) : ?>
+                                <optgroup label="<?php esc_attr_e('Lugares (Taxonomía)', 'event-show-base'); ?>">
+                                    <?php foreach ($lugares as $lug) :
+                                        $value = 'lugar_' . $lug->term_id;
+                                    ?>
+                                        <option value="<?php echo esc_attr($value); ?>" <?php selected($current_lugar_value, $value); ?>>
+                                            <?php echo esc_html($lug->name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                        </select>
+                        <p class="description"><?php esc_html_e('Selecciona el lugar del evento', 'event-show-base'); ?></p>
+                    </td>
+                </tr>
             </table>
         </div>
     <?php
@@ -397,6 +536,54 @@ class Event_Show_Metaboxes
         }
         if (isset($_POST['registration_deadline'])) {
             update_post_meta($post_id, '_registration_deadline', sanitize_text_field($_POST['registration_deadline']));
+        }
+
+        // Guardar organizador
+        if (isset($_POST['event_organizer_id'])) {
+            $organizer_value = sanitize_text_field($_POST['event_organizer_id']);
+            update_post_meta($post_id, '_event_organizer_id', $organizer_value);
+
+            // También sincronizar con taxonomía para compatibilidad
+            if (!empty($organizer_value)) {
+                $parts = explode('_', $organizer_value, 2);
+                $tipo = isset($parts[0]) ? $parts[0] : '';
+                $id = isset($parts[1]) ? intval($parts[1]) : 0;
+
+                if ($tipo === 'organizador' && $id) {
+                    // Asignar taxonomía
+                    wp_set_post_terms($post_id, array($id), 'organizador', false);
+                } else {
+                    // Limpiar taxonomía si es establecimiento
+                    wp_set_post_terms($post_id, array(), 'organizador', false);
+                }
+            } else {
+                // Limpiar taxonomía si no hay selección
+                wp_set_post_terms($post_id, array(), 'organizador', false);
+            }
+        }
+
+        // Guardar lugar
+        if (isset($_POST['event_lugar_id'])) {
+            $lugar_value = sanitize_text_field($_POST['event_lugar_id']);
+            update_post_meta($post_id, '_event_lugar_id', $lugar_value);
+
+            // También sincronizar con taxonomía para compatibilidad
+            if (!empty($lugar_value)) {
+                $parts = explode('_', $lugar_value, 2);
+                $tipo = isset($parts[0]) ? $parts[0] : '';
+                $id = isset($parts[1]) ? intval($parts[1]) : 0;
+
+                if ($tipo === 'lugar' && $id) {
+                    // Asignar taxonomía
+                    wp_set_post_terms($post_id, array($id), 'lugar', false);
+                } else {
+                    // Limpiar taxonomía si es establecimiento
+                    wp_set_post_terms($post_id, array(), 'lugar', false);
+                }
+            } else {
+                // Limpiar taxonomía si no hay selección
+                wp_set_post_terms($post_id, array(), 'lugar', false);
+            }
         }
 
         // --- Datos nuevos para comparar ---
