@@ -42,6 +42,13 @@ class Event_Show_Admin
         add_action('wp_ajax_event_show_export_attendees', array($this, 'ajax_export_attendees'));
         add_action('wp_ajax_event_show_delete_attendee', array($this, 'ajax_delete_attendee'));
 
+        // AJAX para eliminar eventos finalizados
+        add_action('wp_ajax_event_show_delete_finished_events', array($this, 'ajax_delete_finished_events'));
+        add_action('wp_ajax_event_show_count_finished_events', array($this, 'ajax_count_finished_events'));
+
+        // Botón de eliminar eventos finalizados
+        add_action('restrict_manage_posts', array($this, 'add_delete_finished_button'));
+
         // Campos de organizador en perfil de usuario
         add_action('show_user_profile', array($this, 'user_organizador_fields'));
         add_action('edit_user_profile', array($this, 'user_organizador_fields'));
@@ -1424,5 +1431,196 @@ class Event_Show_Admin
             </style>
         </div>
 <?php
+    }
+
+    /**
+     * Agregar botón para eliminar eventos finalizados
+     */
+    public function add_delete_finished_button($post_type)
+    {
+        // Solo mostrar en la lista de eventos
+        if ($post_type !== 'evento') {
+            return;
+        }
+
+        // Solo administradores pueden ver este botón
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $finished_count = $this->get_finished_events_count();
+        $nonce = wp_create_nonce('event_show_delete_finished');
+
+        echo '<div class="alignleft actions">';
+        echo '<button type="button" id="event-show-delete-finished" class="button" data-count="' . esc_attr($finished_count) . '" data-nonce="' . esc_attr($nonce) . '">';
+        echo '<span class="dashicons dashicons-trash" style="margin-top:3px;"></span> ';
+        echo esc_html__('Eliminar eventos finalizados', 'event-show-base');
+        echo ' <span class="count">(' . number_format_i18n($finished_count) . ')</span>';
+        echo '</button>';
+        echo '<span class="spinner" id="event-show-delete-spinner" style="float:none;margin:0 0 0 8px;"></span>';
+        echo '</div>';
+    }
+
+    /**
+     * Obtener cantidad de eventos finalizados
+     */
+    private function get_finished_events_count()
+    {
+        global $wpdb;
+
+        $today = current_time('timestamp');
+
+        // Obtener todos los eventos para evaluar
+        $events = $wpdb->get_results("
+            SELECT p.ID,
+                   pm_start_date.meta_value as start_date,
+                   pm_start_time.meta_value as start_time,
+                   pm_end_date.meta_value as end_date,
+                   pm_end_time.meta_value as end_time
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm_start_date ON (p.ID = pm_start_date.post_id AND pm_start_date.meta_key = '_event_date')
+            LEFT JOIN {$wpdb->postmeta} pm_start_time ON (p.ID = pm_start_time.post_id AND pm_start_time.meta_key = '_event_time')
+            LEFT JOIN {$wpdb->postmeta} pm_end_date ON (p.ID = pm_end_date.post_id AND pm_end_date.meta_key = '_event_end_date')
+            LEFT JOIN {$wpdb->postmeta} pm_end_time ON (p.ID = pm_end_time.post_id AND pm_end_time.meta_key = '_event_end_time')
+            WHERE p.post_type = 'evento'
+            AND p.post_status IN ('publish', 'draft', 'pending', 'private')
+        ");
+
+        $finished_count = 0;
+
+        foreach ($events as $event) {
+            // Determinar la fecha/hora de finalización
+            $end_date = !empty($event->end_date) ? $event->end_date : $event->start_date;
+            $end_time = !empty($event->end_time) ? $event->end_time : '23:59:59';
+
+            // Convertir fecha de dd/mm/yyyy a timestamp
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $end_date, $matches)) {
+                $day = $matches[1];
+                $month = $matches[2];
+                $year = $matches[3];
+
+                // Crear timestamp del evento
+                $event_datetime = strtotime("$year-$month-$day $end_time");
+
+                // Comparar con hoy
+                if ($event_datetime !== false && $event_datetime < $today) {
+                    $finished_count++;
+                }
+            }
+        }
+
+        return $finished_count;
+    }
+
+    /**
+     * AJAX: Contar eventos finalizados
+     */
+    public function ajax_count_finished_events()
+    {
+        check_ajax_referer('event_show_delete_finished', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('No tienes permisos para realizar esta acción.', 'event-show-base')]);
+        }
+
+        $count = $this->get_finished_events_count();
+
+        wp_send_json_success(['count' => $count]);
+    }
+
+    /**
+     * AJAX: Eliminar eventos finalizados
+     */
+    public function ajax_delete_finished_events()
+    {
+        // Verificar nonce
+        if (!check_ajax_referer('event_show_delete_finished', 'nonce', false)) {
+            wp_send_json_error(['message' => __('Token de seguridad inválido. Por favor, recarga la página e intenta de nuevo.', 'event-show-base')]);
+            return;
+        }
+
+        // Verificar permisos
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('No tienes permisos para realizar esta acción.', 'event-show-base')]);
+            return;
+        }
+
+        global $wpdb;
+
+        $today = current_time('timestamp');
+
+        // Obtener todos los eventos para evaluar
+        $events = $wpdb->get_results("
+            SELECT p.ID,
+                   pm_start_date.meta_value as start_date,
+                   pm_start_time.meta_value as start_time,
+                   pm_end_date.meta_value as end_date,
+                   pm_end_time.meta_value as end_time
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm_start_date ON (p.ID = pm_start_date.post_id AND pm_start_date.meta_key = '_event_date')
+            LEFT JOIN {$wpdb->postmeta} pm_start_time ON (p.ID = pm_start_time.post_id AND pm_start_time.meta_key = '_event_time')
+            LEFT JOIN {$wpdb->postmeta} pm_end_date ON (p.ID = pm_end_date.post_id AND pm_end_date.meta_key = '_event_end_date')
+            LEFT JOIN {$wpdb->postmeta} pm_end_time ON (p.ID = pm_end_time.post_id AND pm_end_time.meta_key = '_event_end_time')
+            WHERE p.post_type = 'evento'
+            AND p.post_status IN ('publish', 'draft', 'pending', 'private')
+        ");
+
+        $event_ids = array();
+
+        foreach ($events as $event) {
+            // Determinar la fecha/hora de finalización
+            $end_date = !empty($event->end_date) ? $event->end_date : $event->start_date;
+            $end_time = !empty($event->end_time) ? $event->end_time : '23:59:59';
+
+            // Convertir fecha de dd/mm/yyyy a timestamp
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $end_date, $matches)) {
+                $day = $matches[1];
+                $month = $matches[2];
+                $year = $matches[3];
+
+                // Crear timestamp del evento
+                $event_datetime = strtotime("$year-$month-$day $end_time");
+
+                // Comparar con hoy
+                if ($event_datetime !== false && $event_datetime < $today) {
+                    $event_ids[] = $event->ID;
+                }
+            }
+        }
+
+        if (empty($event_ids)) {
+            wp_send_json_success([
+                'message' => __('No hay eventos finalizados para eliminar.', 'event-show-base'),
+                'deleted' => 0
+            ]);
+            return;
+        }
+
+        $deleted = 0;
+
+        foreach ($event_ids as $event_id) {
+            // Forzar eliminación permanente
+            if (wp_delete_post($event_id, true)) {
+                $deleted++;
+
+                // Registrar en el log
+                Event_Show_Logger::log(
+                    'event_deleted',
+                    sprintf(
+                        __('Evento finalizado #%d eliminado automáticamente', 'event-show-base'),
+                        $event_id
+                    ),
+                    $event_id
+                );
+            }
+        }
+
+        wp_send_json_success([
+            'message' => sprintf(
+                __('Se eliminaron %d evento(s) finalizado(s) correctamente.', 'event-show-base'),
+                $deleted
+            ),
+            'deleted' => $deleted
+        ]);
     }
 }

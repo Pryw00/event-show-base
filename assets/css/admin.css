@@ -629,3 +629,47 @@
   color: #666;
   line-height: 1.5;
 }
+
+/* =======================
+   Botón Eliminar Eventos Finalizados
+   ======================= */
+#event-show-delete-finished {
+  background: #dc3232;
+  border-color: #dc3232;
+  color: #fff;
+  text-shadow: none;
+  box-shadow: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#event-show-delete-finished:hover:not(:disabled) {
+  background: #a00;
+  border-color: #a00;
+  color: #fff;
+}
+
+#event-show-delete-finished:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#event-show-delete-finished .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+#event-show-delete-finished .count {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+#event-show-delete-spinner {
+  visibility: hidden;
+}
+
+#event-show-delete-spinner.is-active {
+  visibility: visible;
+}

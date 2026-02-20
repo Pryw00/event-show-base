@@ -28,6 +28,9 @@
 
     // Imagen organizador/lugar
     initTaxonomyImage();
+
+    // Eliminar eventos finalizados
+    initDeleteFinishedEvents();
   });
 
   /**
@@ -429,4 +432,86 @@
       }
     })
     .trigger("change");
+
+  /**
+   * Inicializar eliminación de eventos finalizados
+   */
+  function initDeleteFinishedEvents() {
+    $("#event-show-delete-finished").on("click", function (e) {
+      e.preventDefault();
+
+      var $button = $(this);
+      var $spinner = $("#event-show-delete-spinner");
+      var count = parseInt($button.data("count"));
+
+      if (count === 0) {
+        alert("No hay eventos finalizados para eliminar.");
+        return;
+      }
+
+      var confirmMessage =
+        "¿Estás seguro de que deseas eliminar " +
+        count +
+        " evento(s) finalizado(s)?\n\n" +
+        "Esta acción NO se puede deshacer. Los eventos se eliminarán permanentemente.";
+
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+
+      // Deshabilitar botón y mostrar spinner
+      $button.prop("disabled", true);
+      $spinner.addClass("is-active");
+
+      // Obtener el nonce del botón
+      var nonce = $button.data("nonce");
+
+      if (!nonce) {
+        alert("Error: No se pudo obtener el token de seguridad.");
+        $button.prop("disabled", false);
+        $spinner.removeClass("is-active");
+        return;
+      }
+
+      $.ajax({
+        url: ajaxurl,
+        type: "POST",
+        data: {
+          action: "event_show_delete_finished_events",
+          nonce: nonce,
+        },
+        success: function (response) {
+          if (response.success) {
+            alert(
+              response.data.message ||
+                "Eventos eliminados correctamente. Se eliminaron " +
+                  response.data.deleted +
+                  " evento(s).",
+            );
+
+            // Actualizar el contador del botón
+            $button.find(".count").text("(0)");
+            $button.data("count", 0);
+
+            // Recargar la página para actualizar la lista
+            window.location.reload();
+          } else {
+            alert(
+              response.data.message ||
+                "Error al eliminar los eventos. Por favor, inténtalo de nuevo.",
+            );
+            $button.prop("disabled", false);
+            $spinner.removeClass("is-active");
+          }
+        },
+        error: function () {
+          alert(
+            "Error de conexión. Por favor, verifica tu conexión e inténtalo de nuevo.",
+          );
+          $button.prop("disabled", false);
+          $spinner.removeClass("is-active");
+        },
+      });
+    });
+  }
 })(jQuery);
