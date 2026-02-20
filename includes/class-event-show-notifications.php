@@ -327,8 +327,23 @@ class Event_Show_Notifications
         $admin_emails_string = get_option('event_show_admin_email', get_option('admin_email'));
         $admin_emails = self::process_admin_emails($admin_emails_string);
 
+        // Obtener el role principal del usuario
+
+        $roles = isset($author->roles) ? $author->roles : array();
+        // Obtener roles prioritarios desde la configuración
+        $roles_prioritarios_str = get_option('event_show_priority_roles', 'gold,platinum,vip');
+        $roles_prioritarios = array_map('trim', explode(',', $roles_prioritarios_str));
+        // Detectar si alguno de los roles del usuario es prioritario
+        $roles_usuario_prioritarios = array_intersect($roles, $roles_prioritarios);
+        $es_urgente = !empty($roles_usuario_prioritarios);
+        // Para mostrar en el correo, listar todos los roles del usuario
+        $role_name = !empty($roles) ? implode(', ', $roles) : 'usuario';
+
         $subject = sprintf(
-            __('Nuevo evento pendiente de aprobación: %s', 'event-show-base'),
+            $es_urgente
+                ? __('URGENTE: Nuevo evento de usuario prioritario (%s): %s', 'event-show-base')
+                : __('Nuevo evento pendiente de aprobación: %s', 'event-show-base'),
+            $role_name,
             $event->post_title
         );
 
@@ -336,7 +351,9 @@ class Event_Show_Notifications
             'event_title' => $event->post_title,
             'author_name' => $author->display_name,
             'author_email' => $author->user_email,
+            'author_role' => ucfirst($role_name),
             'edit_link' => admin_url('post.php?post=' . $event_id . '&action=edit'),
+            'urgent_label' => $es_urgente ? __('Prioridad Alta', 'event-show-base') : '',
         ));
 
         $headers = array('Content-Type: text/html; charset=UTF-8');
@@ -516,17 +533,19 @@ class Event_Show_Notifications
 				</html>
 			',
             'admin_new_event' => '
-				<html>
-				<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-					<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-						<h2 style="color: #2c3e50;">Nuevo evento pendiente de aprobación</h2>
-						<p>El usuario <strong>{author_name}</strong> ({author_email}) ha enviado un nuevo evento:</p>
-						<p><strong>Título:</strong> {event_title}</p>
-						<p><a href="{edit_link}" style="display: inline-block; padding: 10px 20px; background-color: #3498db; color: #fff; text-decoration: none; border-radius: 5px;">Revisar y Aprobar</a></p>
-					</div>
-				</body>
-				</html>
-			',
+                   <html>
+                   <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                       <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                           <h2 style="color: #2c3e50;">Nuevo evento pendiente de aprobación</h2>
+                           <p>El usuario <strong>{author_name}</strong> ({author_email}) ha enviado un nuevo evento:</p>
+                           <p><strong>Role:</strong> {author_role}</p>
+                           {urgent_label}
+                           <p><strong>Título:</strong> {event_title}</p>
+                           <p><a href="{edit_link}" style="display: inline-block; padding: 10px 20px; background-color: #3498db; color: #fff; text-decoration: none; border-radius: 5px;">Revisar y Aprobar</a></p>
+                       </div>
+                   </body>
+                   </html>
+               ',
             'user_event_submission' => '
 				<html>
 				<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
