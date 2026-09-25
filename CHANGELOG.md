@@ -5,6 +5,22 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.4.6] - 2026-09-25
+
+> Resumen de 1.3.x–1.4.6, reconstruido a partir del historial de git. Este plugin quedó superado por el módulo `event-show` de `ibarra-vive`.
+
+### Añadido
+
+- Configuración de roles prioritarios y notificaciones urgentes para eventos.
+- Eliminación de eventos finalizados desde la administración.
+- Gestión de organizador y lugar en los metaboxes del evento (taxonomías y establecimientos de Simple Cards Listings).
+- Procesamiento de múltiples correos electrónicos para notificaciones.
+
+### Cambiado
+
+- Mejoras en el registro de inscripciones y en el manejo de fechas.
+- Los metaboxes de organizador y lugar pasan de `class-event-show-integrations.php` a `class-event-show-metaboxes.php` (se elimina código duplicado).
+
 ## [1.2.11] - 2026-02-19
 
 ### Añadido
