@@ -40,8 +40,8 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Verificar capacidad específica
-        if (user_can($user_id, 'create_eventos')) {
+        // Verificar capacidad específica (custom o estándar)
+        if (user_can($user_id, 'create_eventos') || user_can($user_id, 'edit_posts')) {
             return true;
         }
 
@@ -77,8 +77,8 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Capacidad para editar de otros
-        if (user_can($user_id, 'edit_others_eventos')) {
+        // Capacidad para editar de otros (custom o estándar)
+        if (user_can($user_id, 'edit_others_eventos') || user_can($user_id, 'edit_others_posts')) {
             return true;
         }
 
@@ -94,8 +94,15 @@ class Event_Show_Permissions
         }
 
         // El autor puede editar su propio evento si tiene la capacidad
+        // Verificar tanto la capacidad custom como la estándar de WordPress (fallback)
         if ((int) $post->post_author === (int) $user_id) {
-            return user_can($user_id, 'edit_eventos');
+            if (user_can($user_id, 'edit_eventos')) {
+                return true;
+            }
+            // Fallback: si el CPT usa capability_type 'post', verificar edit_posts
+            if (user_can($user_id, 'edit_posts')) {
+                return true;
+            }
         }
 
         return false;
@@ -124,8 +131,8 @@ class Event_Show_Permissions
             return true;
         }
 
-        // Capacidad para eliminar de otros
-        if (user_can($user_id, 'delete_others_eventos')) {
+        // Capacidad para eliminar de otros (custom o estándar)
+        if (user_can($user_id, 'delete_others_eventos') || user_can($user_id, 'delete_others_posts')) {
             return true;
         }
 
@@ -142,7 +149,9 @@ class Event_Show_Permissions
 
         // El autor puede eliminar su propio evento si tiene la capacidad
         if ((int) $post->post_author === (int) $user_id) {
-            return user_can($user_id, 'delete_eventos');
+            if (user_can($user_id, 'delete_eventos') || user_can($user_id, 'delete_posts')) {
+                return true;
+            }
         }
 
         return false;
@@ -629,8 +638,8 @@ class Event_Show_Permissions
         // Verificar permiso usando el sistema de integración con ARM
         $can_edit_others = apply_filters('event_show_check_permission', false, 'edit_others_eventos', $user_id);
 
-        // Si no usa ARM, verificar capacidad nativa
-        if (!$can_edit_others && user_can($user_id, 'edit_others_eventos')) {
+        // Si no usa ARM, verificar capacidad nativa (custom o estándar)
+        if (!$can_edit_others && (user_can($user_id, 'edit_others_eventos') || user_can($user_id, 'edit_others_posts'))) {
             $can_edit_others = true;
         }
 
@@ -639,9 +648,9 @@ class Event_Show_Permissions
             return;
         }
 
-        // Verificar si al menos puede editar propios
+        // Verificar si al menos puede editar propios (custom o estándar)
         $can_edit = apply_filters('event_show_check_permission', false, 'edit_eventos', $user_id);
-        if (!$can_edit && !user_can($user_id, 'edit_eventos')) {
+        if (!$can_edit && !user_can($user_id, 'edit_eventos') && !user_can($user_id, 'edit_posts')) {
             // No tiene permisos, no mostrar nada
             $query->set('author', 0);
             return;
