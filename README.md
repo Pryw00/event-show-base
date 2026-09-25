@@ -2,6 +2,12 @@
 
 Sistema completo de gestión de eventos para WordPress con funcionalidades avanzadas de registro, notificaciones y administración.
 
+- **Versión actual:** 1.4.6 (ver `event-show.php`)
+- **Text domain:** `event-show-base`
+- **Repositorio:** https://github.com/Pryw00/event-show-base
+
+> **Relación con Ibarra Vive:** este repositorio es la versión **base / standalone** del plugin Event Show. Una variante evolucionada del mismo código vive como módulo en el plugin unificado [`ibarra-vive`](https://github.com/Pryw00/ibarra-vive) (`modules/event-show/`), que incluye cambios adicionales (p. ej. importación/exportación e iconos). Los cambios no se sincronizan automáticamente entre ambos.
+
 ## Descripción
 
 Event Show es un plugin completo para WordPress que permite crear, gestionar y promover eventos de manera profesional. Incluye sistema de registro de asistentes, notificaciones por email, múltiples vistas (grid, lista, calendario, carrusel), y un completo panel de administración.
@@ -91,10 +97,21 @@ Si tienes instalado el plugin **Access Control**, puedes configurar qué roles d
 
 ## Instalación
 
-1. Descarga el plugin
+### Desde un archivo ZIP
+
+1. Comprime la carpeta `event-show-base` (sin la carpeta `.git`) en `event-show-base.zip`
+2. En WordPress ve a **Plugins > Añadir nuevo > Subir plugin** y selecciona el ZIP
+3. Activa el plugin
+4. Configura las opciones desde "Eventos > Configuración"
+
+### Instalación manual
+
+1. Descarga o clona el repositorio: `git clone https://github.com/Pryw00/event-show-base.git`
 2. Sube la carpeta `event-show-base` a `/wp-content/plugins/`
 3. Activa el plugin desde el menú 'Plugins' en WordPress
 4. Configura las opciones desde "Eventos > Configuración"
+
+> Evita activar este plugin junto con `ibarra-vive`: ambos definen los mismos shortcodes (`event_show_*`) y clases, lo que puede generar conflictos.
 
 ## Uso
 
@@ -455,14 +472,24 @@ Probado con:
 - Temas principales: Twenty Twenty-Four, Astra, GeneratePress, OceanWP
 - Plugins de página: Elementor, Gutenberg
 
+## Desarrollo
+
+El plugin no requiere proceso de compilación (PHP, CSS y JS planos). Para generar un paquete instalable basta con comprimir la carpeta del plugin excluyendo `.git` y los archivos ignorados:
+
+```bash
+# desde la carpeta padre
+zip -r event-show-base.zip event-show-base -x "event-show-base/.git/*"
+```
+
+Documentación adicional: [INSTALLATION.md](INSTALLATION.md), [TECHNICAL.md](TECHNICAL.md), [INTEGRATION-ACCESS-CONTROL.md](INTEGRATION-ACCESS-CONTROL.md).
+
 ## Soporte
 
-Para reportar bugs o solicitar características:
-
-- Email: soporte@eventshow.com
-- Issues: GitHub repository
+Para reportar bugs o solicitar características abre un issue en https://github.com/Pryw00/event-show-base/issues
 
 ## Changelog
+
+El historial completo de cambios está en [CHANGELOG.md](CHANGELOG.md).
 
 ### 1.0.0 - 2024-01-01
 
@@ -485,9 +512,13 @@ Desarrollado siguiendo el estándar IEEE 830-1998 para especificaciones de softw
 
 GPL v2 or later
 
+## Repositorio
+
+https://github.com/Pryw00/event-show-base
+
 ## Autor
 
-Event Show Development Team
+Wilson Yépez (PRYW) — [@Pryw00](https://github.com/Pryw00)
 
 ---
 

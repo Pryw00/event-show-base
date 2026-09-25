@@ -54,3 +54,20 @@ Thumbs.db
 # Package managers
 package-lock.json
 yarn.lock
+
+# --- añadido en auditoría 2026-09-25 ---
+desktop.ini
+*.sublime-*
+.env
+.env.*
+!.env.example
+vendor/
+*.zip
+dist/
+build/
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+composer-debug.log
